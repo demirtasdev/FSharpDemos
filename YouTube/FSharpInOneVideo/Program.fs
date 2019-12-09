@@ -42,15 +42,46 @@ let filterAndMultiply() =
 // ___04_MULTIPLEFUNCTIONSATONCE___
 let multiplyNumber x = x * 3
 let addNumber x = x + 3
+// compose two functions together using ">>" or "<<"
 let multiplyAndAddNumber = multiplyNumber >> addNumber
+// direction of the arrows determines the flow of functions
 let addAndMultiplyNumber = multiplyNumber << addNumber
+
+
+// ___05_MATHFUNCTIONS___
+let doMath() =
+    printfn "5 + 4 = %i" (5 + 4)
+    printfn "5 - 4 = %i" (5 - 4)
+    printfn "5 * 4 = %i" (5 * 4)
+    printfn "5 / 4 = %i" (5 / 4)
+    // to print '%' you need to type two of them back to back
+    printfn "5 %% 4 = %i" (5 % 4)
+    // "**" returns the number on the left squared by the number on the right as float
+    printfn "5 ** 4 = %.1f" (5.0 ** 4.0)
+
+    // you can get the type of a number as such:
+    let number = 2;
+    printfn "Type : %A" (number.GetType())
+
+    // and you can cast one type into another:
+    printfn "A Float : %.2f" (float number)
+    printfn "An Int : %i" (int 3.14)
+
+    // some more basic math functions:
+    printfn "abs -1 : %i" (abs -1)
+    printfn "ceil 4.5 : %f" (ceil 4.5)
+    printfn "floor 4.5 : %f" (floor 4.5)
+    printfn "log 2.71828 : %f" (log 2.71828)
+    printfn "log10 1000 : %f" (log10 1000.0)
+    printfn "sqrt 25 : %f" (sqrt 25.0)
+
+
 
 
 [<EntryPoint>]
 let main argv =
 
-    printfn "multiplyAndAddNumber: %i" (multiplyAndAddNumber 10)
-    printfn "addAndMultiplyNumber: %i" (addAndMultiplyNumber 10)
+    doMath()
 
     // keep the console open
     Console.ReadKey() |> ignore
