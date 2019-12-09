@@ -1,6 +1,5 @@
 ﻿open System
 
-
 // takes two int and returns their sum
 let sum (x:int, y:int) : int = x + y
 
