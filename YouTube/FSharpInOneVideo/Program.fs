@@ -1,17 +1,14 @@
 ﻿open System
 
-let bindStuff() =
-    let mutable weight = 175
-    weight <- 170
-    printfn "weight: %i" weight
-
-    let changeMe = ref 10
-    changeMe := 50
-    printfn "Change: %i" ! changeMe
-
+module Funcs =
+    let doFuncs() =
+        let getSum (x:int, y:int) : int = x + y
+        printfn "5 + 7 = %i" (getSum(5, 7))
 
 [<EntryPoint>]
 let main argv =
-    bindStuff()
-    Console.ReadKey()
+
+    Funcs.doFuncs()
+    Console.ReadKey |> ignore
+    
     0 // return an integer exit code
