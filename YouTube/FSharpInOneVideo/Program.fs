@@ -1,11 +1,11 @@
 ﻿open System
 
-// ___01_FIRSTFUNCTION___
+// ___01-FIRSTFUNCTION___
 // takes two int and returns their sum
 let sum (x:int, y:int) : int = x + y
 
 
-// ___02_RECURSIVEFUNCTIONS___
+// ___02-RECURSIVEFUNCTIONS___
 // a recursive function keeps calling itself until it returns a value
 let rec factorial x =
     // in this case it returns a value when x is smaller than 1
@@ -20,7 +20,7 @@ let rec factorial x =
         // 4th : result = 1 * factorial(0) = 1 * 1 = 1
 
 
-// ___03_LAMBDAEXPRESSIONS___
+// ___03-LAMBDAEXPRESSIONS___
 // Create a list of two integers
 let randList = [1;2;3]
 // Use a lambda expression to multiply each value by 2 (notice "fun x ->..."):
@@ -39,7 +39,7 @@ let filterAndMultiply() =
     |> printfn "Even Doubles: %A"
 
 
-// ___04_MULTIPLEFUNCTIONSATONCE___
+// ___04-MULTIPLEFUNCTIONSATONCE___
 let multiplyNumber x = x * 3
 let addNumber x = x + 3
 // compose two functions together using ">>" or "<<"
@@ -48,7 +48,7 @@ let multiplyAndAddNumber = multiplyNumber >> addNumber
 let addAndMultiplyNumber = multiplyNumber << addNumber
 
 
-// ___05_MATHFUNCTIONS___
+// ___05-MATHFUNCTIONS___
 let doMath() =
     printfn "5 + 4 = %i" (5 + 4)
     printfn "5 - 4 = %i" (5 - 4)
@@ -76,7 +76,7 @@ let doMath() =
     printfn "sqrt 25 : %f" (sqrt 25.0)
 
 
-// ___06_STRINGFUNCTIONS___
+// ___06-STRINGFUNCTIONS___
 // EscapeCharacters:    newLine: \n    backSlash: \\    doubleQuote: \"    singleQuote: \'    percentSign: %%
 let stringFuncs() =
     // declare a string function:
@@ -107,10 +107,46 @@ let stringFuncs() =
     String.iter(fun c -> printfn "%c" c) "Print Me"
 
 
+// ___07-LOOPS___
+// While Loop
+let whileLoop() =
+    let magicNum = "7"
+    let mutable guess = ""
+
+    // keep the user guessing while..
+    while not (magicNum.Equals(guess)) do
+        printf "Guess the number : "
+        guess <- Console.ReadLine()
+
+    printfn "You guessed the number!"
+
+// For Loops
+let forLoops() =
+    // going up from 1 to 10:
+    for i = 1 to 10 do
+        printfn "%i" i
+
+    // going down from 10 to 1:
+    for i = 10 downto 1 do
+        printfn "%i" i
+
+    // loop over a 'range' (similar to foreach in C#):     
+    for i in [1..10] do
+        printfn "%i" i
+
+// Some useful iterations:
+let iterations() =
+    // iteration by piping a range into a function:
+    [1..10] |> List.iter (printfn "Num %i")
+    // iterate over a whole range using List.reduce, get the sum of all its members:
+    let sum = List.reduce (+) [1..10]
+    printfn "Sum: %i" sum
+
+ 
 [<EntryPoint>]
 let main argv =
 
-    stringFuncs()
+    forLoops()
 
     // keep the console open
     Console.ReadKey() |> ignore
