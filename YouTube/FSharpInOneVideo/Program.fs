@@ -76,12 +76,41 @@ let doMath() =
     printfn "sqrt 25 : %f" (sqrt 25.0)
 
 
+// ___06_STRINGFUNCTIONS___
+// EscapeCharacters:    newLine: \n    backSlash: \\    doubleQuote: \"    singleQuote: \'    percentSign: %%
+let stringFuncs() =
+    // declare a string function:
+    let str1 = "This is a random string"
+    // verbatum string:
+    let str2 = @"I ignore backslashes. (\)"
+    // three quote string:
+    let str3 = """ "I ignore double quotes and backslashes" """
+    // combine strings:
+    let str4 = str1 + " " + str2
+    // get the length of a string:
+    printfn "Length : %i" (String.length str4)
+    // access characters by index:
+    printfn "%c" str1.[1]
+    // get substring:
+    printfn "1st word: %s" (str1.[0..3])
+    // use String.collect to execute a function on each character of a string:
+    let upperStr = String.collect (fun c -> sprintf"%c, " c) "commas"
+    printfn "Commas : %s" upperStr
+    // use String.exists and Char.IsUpper to check for uppercase characters:
+    printfn "Any upper : %b" (String.exists (fun c -> Char.IsUpper(c)) str1)
+    // use String.forall and Char.IsDigit to check whether ALL characters are digits:
+    printfn "Number : %b" (String.forall (fun c -> Char.IsDigit(c)) "1234")
+    // use String.init to iterate up to 10 and concatenate all the values:
+    let string1 = String.init 10 (fun i -> i.ToString())
+    printfn "Numbers : %s" string1
+    // use String.iter to print each character of a string on a new line:
+    String.iter(fun c -> printfn "%c" c) "Print Me"
 
 
 [<EntryPoint>]
 let main argv =
 
-    doMath()
+    stringFuncs()
 
     // keep the console open
     Console.ReadKey() |> ignore
