@@ -1,12 +1,17 @@
 ﻿open System
 
-let hello() =
-    printf "Enter your name: "
-    let name = Console.ReadLine()
-    printfn "Hello %s" name
+let bindStuff() =
+    let mutable weight = 175
+    weight <- 170
+    printfn "weight: %i" weight
+
+    let changeMe = ref 10
+    changeMe := 50
+    printfn "Change: %i" ! changeMe
+
 
 [<EntryPoint>]
 let main argv =
-    hello()
-    Console.ReadKey() |> ignore
+    bindStuff()
+    Console.ReadKey()
     0 // return an integer exit code
