@@ -1,13 +1,23 @@
 ﻿open System
 
+
+let sum (x:int, y:int) : int = x + y
+
+let rec factorial x =
+    if x < 1 then 1
+    else x * factorial (x - 1)
+
+
+
 [<EntryPoint>]
 let main argv =
 
-    let doFuncs() =
-        let getSum (x:int, y:int) : int = x + y
-        printfn "5 + 7 = %i" (getSum(5, 7))
+    // `sum` function call
+    printfn "5 + 7 = %i" (sum(5, 7))
 
-    doFuncs()
+    // `factorial` function call
+    printfn "Factorial 4 : %i" (factorial 4)
+
+
     Console.ReadKey() |> ignore
-    
     0 // return an integer exit code
