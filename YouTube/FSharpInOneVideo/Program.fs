@@ -1,5 +1,6 @@
 ﻿open System
 
+
 // takes two int and returns their sum
 let sum (x:int, y:int) : int = x + y
 
@@ -10,11 +11,15 @@ let rec factorial x =
     // ..and until then it keeps calling itself with x's previous value - 1
     else x * factorial (x - 1)
 
+        // RESULT:
+        // 1st : result = 4 * factorial(3) = 4 * 6 = 24
+        // 2nd : result = 3 * factorial(2) = 3 * 2 = 6
+        // 3rd : result = 2 * factorial(1) = 2 * 1 = 2
+        // 4th : result = 1 * factorial(0) = 1 * 1 = 1
+
+
 [<EntryPoint>]
 let main argv =
-
-    // `sum` function call
-    printfn "5 + 7 = %i" (sum(5, 7))
 
     // `factorial` function call
     printfn "Factorial 4 : %i" (factorial 4)
