@@ -321,14 +321,45 @@ let records() =
 
 
 
+// ___14_SEQUENCES___
+// i: Sequences allow us to create INFINITE DATA STRUCTURES 
+// that aren't defined nor populated until they are needed.
+let sequences() =
 
+    // basic sequence from a range:
+    let seq1 = seq { 1 .. 100 }
+    // generate even numbers from 0 to 50 (middle value defines how much to increment each time):
+    let seq2 = seq { 0 .. 2 .. 50}
+    // define a descending sequence sequence
+    let seq3 = seq { 50 .. 1 }
+
+    // experiment printing their values:
+    printfn "%A" seq2
+    // it prints only the first four values because sequences 
+    // aren't generated until they're actually required
+
+    // .TOLIST to convert a seq to a list so that we can print all the values
+    Seq.toList seq2 |> List.iter (printfn "Num : %i")
+
+    // a recursive function checking whether the value passed in is a prime number
+    let isPrime n =
+        let rec check i =
+            // return bool depending on whether the number is prime:
+            i > n/2 || (n % i <> 0 && check (i + 1))
+        check 2
+
+    // call isPrime for each number from 1 to 500 and add it to the list if it's prime:
+    let primeSeq = seq { for n in 1..500 do if isPrime n then yield n }    
+
+    // print every value as done before:
+    Seq.toList primeSeq |> List.iter (printfn "Num : %i")
 
 
 
 [<EntryPoint>]
 let main argv =
 
-    records()
+    sequences()
 
     // keep the console open
     Console.ReadKey() |> ignore
