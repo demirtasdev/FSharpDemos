@@ -1,11 +1,11 @@
 ﻿open System
 
-// ___01-FIRSTFUNCTION___
+// ___01_FIRSTFUNCTION___
 // takes two int and returns their sum
 let sum (x:int, y:int) : int = x + y
 
 
-// ___02-RECURSIVEFUNCTIONS___
+// ___02_RECURSIVEFUNCTIONS___
 // a recursive function keeps calling itself until it returns a value
 let rec factorial x =
     // in this case it returns a value when x is smaller than 1
@@ -20,7 +20,7 @@ let rec factorial x =
         // 4th : result = 1 * factorial(0) = 1 * 1 = 1
 
 
-// ___03-LAMBDAEXPRESSIONS___
+// ___03_LAMBDAEXPRESSIONS___
 // Create a list of two integers
 let randList = [1;2;3]
 // Use a lambda expression to multiply each value by 2 (notice "fun x ->..."):
@@ -39,7 +39,7 @@ let filterAndMultiply() =
     |> printfn "Even Doubles: %A"
 
 
-// ___04-MULTIPLEFUNCTIONSATONCE___
+// ___04_MULTIPLEFUNCTIONSATONCE___
 let multiplyNumber x = x * 3
 let addNumber x = x + 3
 // compose two functions together using ">>" or "<<"
@@ -48,7 +48,7 @@ let multiplyAndAddNumber = multiplyNumber >> addNumber
 let addAndMultiplyNumber = multiplyNumber << addNumber
 
 
-// ___05-MATHFUNCTIONS___
+// ___05_MATHFUNCTIONS___
 let doMath() =
     printfn "5 + 4 = %i" (5 + 4)
     printfn "5 - 4 = %i" (5 - 4)
@@ -76,7 +76,7 @@ let doMath() =
     printfn "sqrt 25 : %f" (sqrt 25.0)
 
 
-// ___06-STRINGFUNCTIONS___
+// ___06_STRINGFUNCTIONS___
 // EscapeCharacters:    newLine: \n    backSlash: \\    doubleQuote: \"    singleQuote: \'    percentSign: %%
 let stringFuncs() =
     // declare a string function:
@@ -107,7 +107,7 @@ let stringFuncs() =
     String.iter(fun c -> printfn "%c" c) "Print Me"
 
 
-// ___07-LOOPS___
+// ___07_LOOPS___
 // While Loop
 let whileLoop() =
     let magicNum = "7"
@@ -142,11 +142,47 @@ let iterations() =
     let sum = List.reduce (+) [1..10]
     printfn "Sum: %i" sum
 
+
+// ___08_CONDITIONALS___
+let conditionalOperators() =
+    let age = 8
+    // "if", "else if" and "else" operators
+    if age < 5 then
+        printfn "Preschool"
+    elif age = 5 then
+        printfn "Kindergarten"
+    elif (age > 5) && (age <= 18) then
+        let grade = age - 5
+        printfn "Go to grade %i" grade
+    else
+        printfn "Go to College"
+
+    let gpa = 3.9
+    let income = 15000
+    // "or" operator
+    printfn "College Grant: %b" ((gpa >= 3.8) || income <= 12000)
+    // "not" operator
+    printfn "Not true: %b" (not true)
+    // "match" operator
+    let grade2 yearsOld =
+        // start the operator as such (match 'exp' with)
+        match age with
+        | age when age < 5 -> "Preschool"
+        | 5 -> "Kindergarten"
+        | age when ((age > 5) && (age <= 18)) -> (age - 5).ToString()
+        // "default" condition operator (_)
+        | _ -> "College"    
+    printfn "Grade2: %s" (grade2 8)
+    // notice that when matching an exact value we don't need 'exp' when 'exp'
+    // but we do need it while applying '<', '>', etc
+
+    
+
  
 [<EntryPoint>]
 let main argv =
 
-    forLoops()
+    conditionalOperators();
 
     // keep the console open
     Console.ReadKey() |> ignore
