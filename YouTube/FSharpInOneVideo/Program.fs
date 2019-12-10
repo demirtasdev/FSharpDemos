@@ -308,11 +308,27 @@ let tuples() =
 
 
 
+// ___13_RECORDS___
+// i: Records are a list of key-value pairs for creating custom types.
+// define a record:
+type Customer = { Name:string ; Balance:float }
+
+let records() =
+    // initialize a record:
+    let bob = { Name = "Bob Smith"; Balance = 101.50 }
+    // see result:
+    printfn "%s owes us %.2f" bob.Name bob.Balance
+
+
+
+
+
+
 
 [<EntryPoint>]
 let main argv =
 
-    tuples()
+    records()
 
     // keep the console open
     Console.ReadKey() |> ignore
