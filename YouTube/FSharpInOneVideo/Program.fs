@@ -286,11 +286,33 @@ let options() =
 
 
 
+// ___12_TUPLES___
+// i: A tuple is a grouping of unnamed but ordered values, possibly of different types.
+// Tuples can either be reference types or structs.
+let tuples() =
+    let avg (w, x, y, z) : float =
+        let sum = w + x + y + z
+        sum / 4.0
+
+    // TUPLE as an argument for the above method
+    printfn "Avg : %f" (avg (1.0, 2.0, 3.0, 4.0))
+
+    // TUPLE OF DIFFERENT TYPES
+    let myData = ("Derek", 42, 6.25)
+
+    // instantiating a tuple of variables by a tuple of
+    // UNDERSCORE indicates we don't import the third value of the tuple passed in
+    let (name, age, _) = myData
+
+    printfn "Name : %s" name
+
+
+
 
 [<EntryPoint>]
 let main argv =
 
-    options()
+    tuples()
 
     // keep the console open
     Console.ReadKey() |> ignore
