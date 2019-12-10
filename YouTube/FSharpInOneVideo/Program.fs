@@ -146,7 +146,7 @@ let iterations() =
 // ___08_CONDITIONALS___
 let conditionalOperators() =
     let age = 8
-    // "if", "else if" and "else" operators
+    // IF, ELIF and ELSE operators:
     if age < 5 then
         printfn "Preschool"
     elif age = 5 then
@@ -159,30 +159,88 @@ let conditionalOperators() =
 
     let gpa = 3.9
     let income = 15000
-    // "or" operator
+    // OR operator:
     printfn "College Grant: %b" ((gpa >= 3.8) || income <= 12000)
-    // "not" operator
+    // NOT operator:
     printfn "Not true: %b" (not true)
-    // "match" operator
+    
     let grade2 yearsOld =
-        // start the operator as such (match 'exp' with)
+        // MATCH operator:
         match age with
         | age when age < 5 -> "Preschool"
         | 5 -> "Kindergarten"
         | age when ((age > 5) && (age <= 18)) -> (age - 5).ToString()
-        // "default" condition operator (_)
+        // user UNDERSCORE to define default condition
         | _ -> "College"    
     printfn "Grade2: %s" (grade2 8)
     // notice that when matching an exact value we don't need 'exp' when 'exp'
     // but we do need it while applying '<', '>', etc
 
-    
 
- 
+// ___09_LISTS___
+let lists() =
+
+    // LIST_OPERATORS:
+    // LIST.ITER to iterate over list and print out each value:
+    let list1 = [1;2;3;4]
+    list1 |> List.iter (printfn "Num: %i")
+
+    // %A to print an INTERNAL REPRESENTATION of a list:
+    printfn "list1: %A" list1
+
+    // CONS operators to join several values:
+    let list2 = 5::6::7::[]
+    printfn "list2: %A" list2
+    
+    // RANGE to declare a list of numbers:
+    let list3 = [1..5]
+    printfn "list3: %A" list3
+
+    // RANGE to declare a list of characters:
+    let list4 = ['a'..'g']
+    printfn "list4: %A" list4
+    
+    // LIST.INIT to generate a list with 5 indexes
+    // (the boolean function multiplies each index by two):
+    let list5 = List.init 5 (fun i -> i * 2)  
+    printfn "list5: %A" list5
+
+    // YIELD to generate a list by multiplying index values of a range of numbers by themselves:
+    let list6 = [ for a in 1..5 do yield (a * a) ]
+    printfn "list6: %A" list6
+    // YIELD to create an even list out of a range:
+    let list7 = [ for a in 1..20 do if a % 2 = 0 then yield a]
+    printfn "list7: %A" list7
+    // YIELD BANG to create a list for each item, eventually merging them into a final list:
+    let list8 = [ for a in 1..3 do yield! [ a .. a + 2 ] ]
+    printfn "list8: %A" list8
+
+    // .LENGTH of a list:
+    printfn "Length : %i" list8.Length
+    // .ISEMPTY to check whether the list contains any members:
+    printfn "Empty : %b" list8.IsEmpty
+    // .INDEX to get a member at a certain index:
+    printfn "Index 2 : %c" ( list4.[2] )
+    // .HEAD to get the first element of a list:
+    printfn "Head : %c" ( list4.Head )
+    // .TAIL to get all the elements except the first one:
+    printfn "Tail : %A" ( list5.Tail )
+    // .FILTER to filter a list's members matching a criterion:
+    let list9 = list3 |> List.filter ( fun x -> x % 2 = 0 )
+    // .MAP to return a new list whose elements are the result 
+    // of applying the predicate function to an existing list:
+    let list10 = list9 |> List.map (fun x -> (x * x))
+    // .SORT a list in ascending order:
+    printfn "Sorted : %A" ( List.sort [5;4;3] )
+    // .FOLD a list, iterating over each value, applying a function
+    // to it and adding it up to the eventual final result:
+    printfn "Sum : %i" (List.fold (fun sum elem -> sum + elem) 0 [1;2;3] )
+
+
 [<EntryPoint>]
 let main argv =
 
-    conditionalOperators();
+    lists();
 
     // keep the console open
     Console.ReadKey() |> ignore
