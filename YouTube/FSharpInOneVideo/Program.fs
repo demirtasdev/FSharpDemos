@@ -5,6 +5,7 @@
 let sum (x:int, y:int) : int = x + y
 
 
+
 // ___02_RECURSIVEFUNCTIONS___
 // a recursive function keeps calling itself until it returns a value
 let rec factorial x =
@@ -18,6 +19,7 @@ let rec factorial x =
         // 2nd : result = 3 * factorial(2) = 3 * 2 = 6
         // 3rd : result = 2 * factorial(1) = 2 * 1 = 2
         // 4th : result = 1 * factorial(0) = 1 * 1 = 1
+
 
 
 // ___03_LAMBDAEXPRESSIONS___
@@ -39,6 +41,7 @@ let filterAndMultiply() =
     |> printfn "Even Doubles: %A"
 
 
+
 // ___04_MULTIPLEFUNCTIONSATONCE___
 let multiplyNumber x = x * 3
 let addNumber x = x + 3
@@ -46,6 +49,7 @@ let addNumber x = x + 3
 let multiplyAndAddNumber = multiplyNumber >> addNumber
 // direction of the arrows determines the flow of functions
 let addAndMultiplyNumber = multiplyNumber << addNumber
+
 
 
 // ___05_MATHFUNCTIONS___
@@ -74,6 +78,7 @@ let doMath() =
     printfn "log 2.71828 : %f" (log 2.71828)
     printfn "log10 1000 : %f" (log10 1000.0)
     printfn "sqrt 25 : %f" (sqrt 25.0)
+
 
 
 // ___06_STRINGFUNCTIONS___
@@ -105,6 +110,7 @@ let stringFuncs() =
     printfn "Numbers : %s" string1
     // use String.iter to print each character of a string on a new line:
     String.iter(fun c -> printfn "%c" c) "Print Me"
+
 
 
 // ___07_LOOPS___
@@ -143,6 +149,7 @@ let iterations() =
     printfn "Sum: %i" sum
 
 
+
 // ___08_CONDITIONALS___
 let conditionalOperators() =
     let age = 8
@@ -175,6 +182,7 @@ let conditionalOperators() =
     printfn "Grade2: %s" (grade2 8)
     // notice that when matching an exact value we don't need 'exp' when 'exp'
     // but we do need it while applying '<', '>', etc
+
 
 
 // ___09_LISTS___
@@ -237,10 +245,30 @@ let lists() =
     printfn "Sum : %i" (List.fold (fun sum elem -> sum + elem) 0 [1;2;3] )
 
 
+
+// ___10_ENUMS___
+// define an enum type
+type Emotion =
+| Joy = 0
+| Fear = 1
+| Anger = 2
+
+let enums() =
+    // declare an enum expression
+    let myFeeling = Emotion.Anger
+
+    // MATCH to find which Emotion is myFeeling
+    match myFeeling with
+    | Emotion.Joy -> printfn "I'm Joyful"
+    | Emotion.Fear -> printfn "I'm fearful"
+    | Emotion.Anger -> printfn "I'm angry"
+
+
+
 [<EntryPoint>]
 let main argv =
 
-    lists();
+    enums()
 
     // keep the console open
     Console.ReadKey() |> ignore
