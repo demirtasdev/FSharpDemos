@@ -265,10 +265,32 @@ let enums() =
 
 
 
+// ___11_OPTIONS___
+let options() =
+    // MATCH to work out which option to return:
+    let divide x y =
+        match y with
+        | 0 -> None //..NONE means there is no return value
+        | _ -> Some(x / y) //..SOME means there is a return value (see inside parentheses)
+
+    // .ISSOME to check whether the option returned is Some.
+    // notice we call the function again to get the actual value:
+    if (divide 5 0).IsSome then
+        printfn "5 / 0 = %A" ( (divide 5 0).Value )
+    // .ISNONE to check whether the option returned is None. 
+    elif (divide 5 0).IsNone then
+        printfn "Can't divide by zero"
+    // if none of these is returned, something probable went wrong:    
+    else
+        printfn "Something happened"    
+
+
+
+
 [<EntryPoint>]
 let main argv =
 
-    enums()
+    options()
 
     // keep the console open
     Console.ReadKey() |> ignore
