@@ -390,10 +390,25 @@ let maps()=
     let customers2 = Map.remove "Sally Marks" customers
     printfn "# of Customers : %i" customers2.Count
 
+
+
+// ___15_GENERICS___
+// i: Generics allows us to use any data type in a function
+let addStuff<'T> x y =
+    printfn "%A" (x + y)
+
+let generics() =
+    // declare the type you're using in angle brackets
+    addStuff<int> 5 2
+    // once we do this, the function only accepts the declared type
+
+
+
+
 [<EntryPoint>]
 let main argv =
 
-    maps()
+    generics()
 
     // keep the console open
     Console.ReadKey() |> ignore
