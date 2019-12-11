@@ -447,10 +447,49 @@ let structs() =
 
 
 
+// ___19_CLASSES___
+// i: Classes model a real world object using fields and functions
+
+// TYPE/=CLASS to start a class declaration
+type Animal = class
+    // VAL to define properties
+    val Name : string
+    val Height : float
+    val Weight : float
+
+    // NEW to define a constructor
+    new (name, height, weight) = { Name = name ; Height = height; Weight = weight }
+
+    // MEMBER to define a method
+    member x.Run =
+        printfn "%s Runs" x.Name
+// END to finish declaration    
+end
+
+// define a class that inherits Animal
+type Dog (name, height, weight) =
+    // INHERIT to define what class to inherit
+    inherit Animal(name, height, weight)
+
+    // after inheriting all the methods and properties of a class
+    // we can then go ahead and define our own methods and properties
+    member x.Bark = 
+        printfn "%s Barks" x.Name
+
+let classes() =
+    let spot = Animal("Spot", 20.5, 40.5)
+    spot.Run
+
+    let bowser = Dog("Bowser", 20.5, 40.5)
+    bowser.Run
+    bowser.Bark
+
+
+
 [<EntryPoint>]
 let main argv =
 
-    structs()
+    classes()
 
     // keep the console open
     Console.ReadKey() |> ignore
