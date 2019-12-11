@@ -392,7 +392,7 @@ let maps()=
 
 
 
-// ___15_GENERICS___
+// ___16_GENERICS___
 // i: Generics allows us to use any data type in a function
 let addStuff<'T> x y =
     printfn "%A" (x + y)
@@ -404,11 +404,26 @@ let generics() =
 
 
 
+// ___16_EXCEPTION_HANDLING___
+let exceptionHandling() =
+    let divide x y =
+        // TRY/WITH to check for and handle exceptions
+        try
+            // RAISE to raise an exception manually. we also pass a message to it
+            if y = 0 then raise(DivideByZeroException "Can't Divide by 0")
+            else printfn "%i / %i = %i" x y (x/y)
+        with
+            // | :? after WITH to check for a specific exception
+            | :? System.DivideByZeroException -> printfn "Can't Divide by Zero"  
+
+    divide 5 0
+
+
 
 [<EntryPoint>]
 let main argv =
 
-    generics()
+    exceptionHandling()
 
     // keep the console open
     Console.ReadKey() |> ignore
