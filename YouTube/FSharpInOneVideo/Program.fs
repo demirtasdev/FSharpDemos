@@ -356,10 +356,43 @@ let sequences() =
 
 
 
+let maps()=
+// i: Maps also are collections of key-value pairs like records
+    // MAP.EMPTY to define an empty map
+    let customers =
+        Map.empty.
+            // .ADD to add members (notice the DOTs)
+            Add("Bob Smith", 100.50).
+            Add("Sally Marks", 50.25)
+
+    // .COUNT to get the number of members
+    printfn "# of Customers : %i" customers.Count
+
+    // .TRYFIND to find a member by a key (returns Some(x) or None)
+    let customer = customers.TryFind "Bob Smith"
+    // MATCH/WITH to determine whether any values return
+    match customer with
+    | Some x -> printfn "Balance : %.2f" x
+    | None -> printfn "Not found."
+
+    // %A to print an internal representation of a map
+    printfn "Customers : %A" customers
+
+    // .CONTAINSKEY to determine if a key exists
+    if customers.ContainsKey "Bob Smith" then
+        printfn "Bob Smith was Found"
+
+    // .[KEY] to access a member
+    printfn "Bob's Balance : %.2f" customers.["Bob Smith"]        
+
+    // .REMOVE to remove a member by a key
+    let customers2 = Map.remove "Sally Marks" customers
+    printfn "# of Customers : %i" customers2.Count
+
 [<EntryPoint>]
 let main argv =
 
-    sequences()
+    maps()
 
     // keep the console open
     Console.ReadKey() |> ignore
