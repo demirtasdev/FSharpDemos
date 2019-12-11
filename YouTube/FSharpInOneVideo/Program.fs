@@ -404,7 +404,7 @@ let generics() =
 
 
 
-// ___16_EXCEPTION_HANDLING___
+// ___17_EXCEPTION_HANDLING___
 let exceptionHandling() =
     let divide x y =
         // TRY/WITH to check for and handle exceptions
@@ -420,10 +420,37 @@ let exceptionHandling() =
 
 
 
+// ___18_STRUCTS___
+// i: Structs allow us to create our own data type.
+
+// TYPE/=STRUCT to start a struct declaration
+type Rectangle = struct
+    // VAL to define it's fields
+    val Length : float
+    val Width : float
+
+    // NEW (PARAM1, PARAM2) to declare a constructor
+    new (length, width) =
+        {Length = length ; Width = width}
+// END to finish struct declaration
+end    
+
+let structs() =
+    // define a function that takes in a Rectangle type
+    let area(shape:Rectangle) =
+        shape.Length * shape.Width
+    // instantiate a new Rectangle type
+    let rect = Rectangle(5.0, 6.0)
+    // define a function that is the new rectangle type passed into the area function
+    let rectArea = area rect
+    printfn "Area : %.2f" rectArea
+
+
+
 [<EntryPoint>]
 let main argv =
 
-    exceptionHandling()
+    structs()
 
     // keep the console open
     Console.ReadKey() |> ignore
