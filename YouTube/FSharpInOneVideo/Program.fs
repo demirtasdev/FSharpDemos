@@ -27,6 +27,10 @@ let rec factorial x =
 let randList = [1;2;3]
 // Use a lambda expression to multiply each value by 2 (notice "fun x ->..."):
 let randListTwo = List.map (fun x -> x * 2) randList
+
+randList
+    |> List.map (fun x -> x * 2)
+    |> List.filter (fun x -> x % 2 = 0)
 // map function that exists in the List module maps through each item of the list
 
 
