@@ -1,8 +1,7 @@
 namespace FunctionalToolkit
-
 open System.Collections.Generic
 
-module MovingFunctionsBetweenWorldsWithM =
+module MovingFunctionsBetweenWorldsWithMAP =
 
     let add1 x = x + 1
 
