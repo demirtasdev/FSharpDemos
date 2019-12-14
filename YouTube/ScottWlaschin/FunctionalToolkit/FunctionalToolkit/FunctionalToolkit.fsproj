@@ -4,7 +4,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FunctionTransformers.fs" />
+    <Compile Include="00_FunctionTransformers.fs" />
+    <Compile Include="01_MapTool" />
     <None Include="Script.fsx" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
