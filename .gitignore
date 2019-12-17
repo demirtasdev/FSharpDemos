@@ -389,4 +389,3 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
-GetProgrammingWithFSharp/.ionide/symbolCache.db
