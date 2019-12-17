@@ -1,4 +1,4 @@
-open System;
+open System
 
 let text = "Hello, world!"
 
@@ -13,6 +13,7 @@ let greeting = greetPerson "Fred" 25
 let countWords (text:string) =
         text.Split(" ")
         |> Array.length
+    
 
 
 // QUICK CHECK 3.2
