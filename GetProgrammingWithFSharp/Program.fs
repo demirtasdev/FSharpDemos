@@ -16,20 +16,19 @@ let drive petrol destination =
     else ( "Trip was successful." , remaining )
 
 
-let rec loop destination petrol =
-    let msg , remainingPetrol =  drive petrol destination
+let rec loop petrol =
     
-    printfn "%s Remaining petrol: %.2f" msg remainingPetrol
     printfn "Where would you like to travel?"
     
-    let newDestination = Console.ReadLine()
-    loop newDestination remainingPetrol
+    let destination = Console.ReadLine()
+
+    let msg , newPetrol =  drive petrol destination
+    
+    printfn "%s Remaining petrol: %.2f" msg newPetrol
+    loop newPetrol
 
 
 [<EntryPoint>]
 let main argv =
-    printfn "Where would you like to travel?"
-    let dest = Console.ReadLine()
-    loop dest 100.0
-    
+    loop 100.0
     0 // return an integer exit code
