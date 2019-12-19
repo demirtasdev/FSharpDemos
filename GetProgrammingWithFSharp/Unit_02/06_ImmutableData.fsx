@@ -62,5 +62,5 @@ let kettle (amountWithin, operation) =
 let initialAmountOfWater = 1500.0
 
 let firstState4 = kettle(initialAmountOfWater, "pourToPot")
-let secondState4 = kettle(initialAmountOfWater, "pourToCup")
+let secondState4 = kettle(initialAmountOfWater, "pourToCup")W
 let finalState4 = kettle(initialAmountOfWater, "fillKettle")
