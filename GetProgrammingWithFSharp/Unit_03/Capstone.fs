@@ -76,4 +76,4 @@ let main argv =
     // keep the console open for the thank you message
     printfn "Press any key to continue..."
     Console.Read() |> ignore
-    0 // return an integer exit code
+    0 // return an integer exit cod
