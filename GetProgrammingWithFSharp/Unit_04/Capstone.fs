@@ -1,18 +1,9 @@
 ﻿open System
+open System.IO
 
-type Customer =
-    { FullName:string }
-
-type Account =
-    { ID:Guid 
-      Balance:decimal
-      Owner:Customer }
-
-type Transaction =
-    { Timestamp:DateTime
-      Operation:char
-      Amount:decimal
-      Accepted:bool }
+type Customer = { FullName : string }
+type Account = { ID : Guid; Owner : Customer; Balance : decimal }
+type Transaction = { Timestamp : DateTime; Operation : char; Amount : decimal; Accepted : bool }
 
 let consoleCommands = seq {
     while true do
@@ -38,71 +29,153 @@ let getAmount input =
         printfn "%s" Environment.NewLine
         (input, amount)
 
-let processCommand (account:Account) (cmd, amount) =
-    match cmd with
-    | 'd' ->
-        printfn "Account %s: deposit of %.2f (approved: true)" 
-            account.Owner.FullName amount
+[<AutoOpen>]
+module Operations =
+    let withdraw amount account =
+        if amount > account.Balance then account
+        else { account with Balance = account.Balance - amount }
 
-        { ID = account.ID
-          Balance = account.Balance + amount
-          Owner = account.Owner }
-    | 'w' ->
-        if amount <= account.Balance then
-            printfn "Account %s: withdrawal of %.2f (approved: true)" 
-                account.Owner.FullName amount
+    /// Deposits an amount into an account
+    let deposit amount account =
+        { account with Balance = account.Balance + amount }    
 
-            { ID = account.ID
-              Balance = account.Balance - amount
-              Owner = account.Owner }
+    let auditAs operationName audit operation amount account =
+        let updatedAccount = operation amount account
+        
+        let accountIsUnchanged = (updatedAccount = account)
+
+        let transaction =
+            let transaction = { Operation = operationName; Amount = amount; Timestamp = DateTime.UtcNow; Accepted = true }
+            if accountIsUnchanged then { transaction with Accepted = false }
+            else transaction
+
+        audit account.ID account.Owner.FullName transaction
+        updatedAccount
+
+    let loadAccount (owner, accountId, transactions) =
+        let openingAccount = { ID = accountId; Balance = 0M; Owner = { FullName = owner } }
+
+        transactions
+        |> Seq.sortBy(fun txn -> txn.Timestamp)
+        |> Seq.fold(fun account txn ->
+            if txn.Operation = 'w' then account |> withdraw txn.Amount
+            else account |> deposit txn.Amount) openingAccount
+
+
+[<AutoOpen>]
+module Transactions =
+    let serialize transaction =
+        sprintf "%O***%c***%M***%b" transaction.Timestamp transaction.Operation transaction.Amount transaction.Accepted
+
+    /// Deserializes a transaction
+    let deserialize (fileContents:string) =
+        let parts = fileContents.Split([|"***"|], StringSplitOptions.None)
+        { Timestamp = DateTime.Parse parts.[0]
+          Operation = parts.[1] |> char
+          Amount = Decimal.Parse parts.[2]
+          Accepted = Boolean.Parse parts.[3] }
+
+
+[<AutoOpen>]
+module FileRepository =
+    let private accountsPath =
+        let path = @"accounts"
+        Directory.CreateDirectory path |> ignore
+        path
+
+    let private findAccountFolder owner =    
+        let folders = Directory.EnumerateDirectories(accountsPath, sprintf "%s_*" owner)
+        if Seq.isEmpty folders then ""
         else
-            printfn "Account %s: withdrawal of %.2f (approved: false)" 
-                account.Owner.FullName amount
-            account              
-    | _ -> account
+            let folder = Seq.head folders
+            DirectoryInfo(folder).Name
+    
+    let private buildPath(owner, accountId:Guid) = sprintf @"%s\%s_%O" accountsPath owner accountId
 
-let serialized transaction =
-    sprintf "%O***%c***%M***%b"
-        transaction.Timestamp
-        transaction.Operation
-        transaction.Amount
-        transaction.Accepted
+    let loadTransactions (folder:string) =
+        let owner, accountId =
+            let parts = folder.Split '_'
+            parts.[0], Guid.Parse parts.[1]
+        owner, accountId, buildPath(owner, accountId)
+                          |> Directory.EnumerateFiles
+                          |> Seq.map (File.ReadAllText >> deserialize)
+
+    /// Finds all transactions from disk for specific owner.
+    let findTransactionsOnDisk owner =
+        let folder = findAccountFolder owner
+        if String.IsNullOrEmpty folder then owner, Guid.NewGuid(), Seq.empty
+        else loadTransactions folder
+
+    /// Logs to the file system
+    let writeTransaction accountId owner transaction =
+        let path = buildPath(owner, accountId)    
+        path |> Directory.CreateDirectory |> ignore
+        let filePath = sprintf "%s/%d.txt" path (transaction.Timestamp.ToFileTimeUtc())
+        let line = sprintf "%O***%c***%M***%b" transaction.Timestamp transaction.Operation transaction.Amount transaction.Accepted
+        File.WriteAllText(filePath, line)
 
 
-// bind the result after all operations to
-// a variable as the final state of the account
+[<AutoOpen>]
+module Auditing =
+    let printTransaction _ accountId transaction =
+        printfn "Account %O: %c of %M (approved: %b)" accountId transaction.Operation transaction.Amount transaction.Accepted
 
+    // Logs to both console and file system
+    let composedLogger = 
+        let loggers =
+            [ writeTransaction
+              printTransaction ]
+        fun accountId owner transaction ->
+            loggers
+            |> List.iter(fun logger -> logger accountId owner transaction)
+
+[<AutoOpen>]
+module CommandParsing =
+    let isValidCommand cmd = [ 'd'; 'w'; 'x' ] |> List.contains cmd
+    let isStopCommand = (=) 'x'
+
+[<AutoOpen>]
+module UserInput =
+    let commands = seq {
+        while true do
+            Console.Write "(d)eposit, (w)ithdraw or e(x)it: "
+            yield Console.ReadKey().KeyChar
+            Console.WriteLine() }
+    
+    let getAmount command =
+        Console.WriteLine()
+        Console.Write "Enter Amount: "
+        command, Console.ReadLine() |> Decimal.Parse
+
+let withdrawWithAudit = auditAs 'w' composedLogger withdraw
+let depositWithAudit = auditAs 'd' composedLogger deposit
+let loadAccountFromDisk = findTransactionsOnDisk >> loadAccount
 
 
 [<EntryPoint>]
 let main argv =
-    printf "Please enter your name: "
-    let name = Console.ReadLine()
-
-    let openingAccount = 
-        { Owner = { FullName = name }
-          ID = Guid.Empty; 
-          Balance = 0M }
-
-          
-    printfn "Current balance is £%.2f" openingAccount.Balance
+    let openingAccount =
+        Console.Write "Please enter your name: "
+        Console.ReadLine() |> loadAccountFromDisk
     
-    let finalAccount =
-        consoleCommands
+    printfn "Current balance is £%M" openingAccount.Balance
+
+    let processCommand account (command, amount) =
+        printfn ""
+        let account =
+            if command = 'd' then account |> depositWithAudit amount
+            else account |> withdrawWithAudit amount
+        printfn "Current balance is £%M" account.Balance
+        account
+
+    let closingAccount =
+        commands
         |> Seq.filter isValidCommand
         |> Seq.takeWhile (not << isStopCommand)
         |> Seq.map getAmount
         |> Seq.fold processCommand openingAccount
-
-
-
-    // let account =
-    //     let commands = [ 'd'; 'w'; 'z'; 'f'; 'd'; 'x'; 'w' ]
-        
-    //     commands
-        // |> Seq.filter isValidCommand
-        // |> Seq.takeWhile (not << isStopCommand)
-        // |> Seq.map getAmount
-        // |> Seq.fold processCommand openingAccount
-
+    
+    printfn ""
+    printfn "Closing Balance:\r\n %A" closingAccount
+    Console.ReadKey() |> ignore
     0 // return an integer exit code
