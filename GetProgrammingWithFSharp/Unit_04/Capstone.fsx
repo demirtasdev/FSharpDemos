@@ -1,14 +1,14 @@
 open System
 
 type Customer =
-    { FullName:string }
+    { Name:string }
 
 type Account =
     { ID:Guid 
       Balance:decimal
       Owner:Customer }
 
-// attempt withdrawal function
+// attempt withdrawal
 let withdraw amount ( account:Account ) =
     // check whether the customer has sufficient funds
     match amount with
@@ -21,7 +21,7 @@ let withdraw amount ( account:Account ) =
                 Owner = account.Owner } )
     | _ -> None
 
-// deposit money function
+// deposit money
 let deposit amount (account:Account) =
     let newBalance = account.Balance + amount
     { ID = account.ID
@@ -60,14 +60,18 @@ let rec transactionLoop ( account:Account ) =
     | "exit" ->
         printfn "Press any key to continue..."
         Console.Read() |> ignore
+        account
     | _ ->
         printfn "Faulty response. Please type in \"withdraw\" or \"response\"."
         transactionLoop account
 
-// Start the loop with a 
-transactionLoop 
-{ ID = Guid.NewGuid()
-  Owner = { FullName = "Isaac A." }
-  Balance = 100M }
+// bind the result after all operations to
+// a variable as the final state of the account
+let finalAccount =
+    // Start the loop with an example account
+    transactionLoop 
+        { ID = Guid.NewGuid()
+          Owner = { Name = "Isaac A." }
+          Balance = 100M }
 
     
