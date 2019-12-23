@@ -1,19 +1,18 @@
-namespace Capstone4
+module Capstone.Auditing
 
-open Capstone4.Operations
-open Capstone4.Domain
+open Capstone.Operations
+open Capstone.Domain
 
 
-module Auditing =
-    /// Logs to the console
-    let printTransaction _ accountId transaction =
-        printfn "Account %O: %s of %M (approved: %b)" accountId transaction.Operation transaction.Amount transaction.Accepted
+/// Logs to the console
+let printTransaction _ accountId transaction =
+    printfn "Account %O: %s of %M (approved: %b)" accountId transaction.Operation transaction.Amount transaction.Accepted
 
-    // Logs to both console and file system
-    let composedLogger = 
-        let loggers =
-            [ FileRepository.writeTransaction
-              printTransaction ]
-        fun accountId owner transaction ->
-            loggers
-            |> List.iter(fun logger -> logger accountId owner transaction)
+// Logs to both console and file system
+let composedLogger = 
+    let loggers =
+        [ FileRepository.writeTransaction
+          printTransaction ]
+    fun accountId owner transaction ->
+        loggers
+        |> List.iter(fun logger -> logger accountId owner transaction)

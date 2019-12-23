@@ -3,35 +3,49 @@ namespace Capstone.Operations
 open System
 open Capstone.Domain
 
-module Operations =
-    let withdraw amount account =
-        if amount > account.Balance then account
-        else { account with Balance = account.Balance - amount }
+let private classifyAccount account =
+    if account.Balance >= 0M then (RatedAccount.InCredit(CreditAccount account))
+    else Overdrawn account
 
-    /// Deposits an amount into an account
-    let deposit amount account =
-        { account with Balance = account.Balance + amount }    
+/// Withdraws an amount of an account (if there are sufficient funds)
+let withdraw amount (CreditAccount account) =
+    { account with Balance = account.Balance - amount }
+    |> classifyAccount
 
-    let auditAs operationName audit operation amount account =
-        let updatedAccount = operation amount account
-        
-        let accountIsUnchanged = (updatedAccount = account)
+/// Deposits an amount into an account
+let deposit amount account =
+    let account =
+        match account with
+        | Overdrawn account -> account
+        | InCredit (CreditAccount account) -> account
+    { account with Balance = account.Balance + amount }
+    |> classifyAccount
 
-        let transaction =
-            let transaction = { Operation = operationName; Amount = amount; Timestamp = DateTime.UtcNow; Accepted = true }
-            if accountIsUnchanged then { transaction with Accepted = false }
-            else transaction
+/// Runs some account operation such as withdraw or deposit with auditing.
+let auditAs operationName audit operation amount account accountId owner =
+    let updatedAccount = operation amount account
+    let transaction = { Operation = operationName; Amount = amount; Timestamp = DateTime.UtcNow }
+    audit accountId owner.Name transaction
+    updatedAccount
 
-        audit account.ID account.Owner.FullName transaction
-        updatedAccount
+let tryParseSerializedOperation operation =
+    match operation with
+    | "withdraw" -> Some Withdraw
+    | "deposit" -> Some Deposit
+    | _ -> None
 
-    let loadAccount (owner, accountId, transactions) =
-        let openingAccount = { ID = accountId; Balance = 0M; Owner = { FullName = owner } }
+/// Creates an account from a historical set of transactions
+let loadAccount (owner, accountId, transactions) =
+    let openingAccount = classifyAccount { AccountId = accountId; Balance = 0M; Owner = { Name = owner } }
 
-        transactions
-        |> Seq.sortBy(fun txn -> txn.Timestamp)
-        |> Seq.fold(fun account txn ->
-            if txn.Operation = 'w' then account |> withdraw txn.Amount
-            else account |> deposit txn.Amount) openingAccount
+    transactions
+    |> Seq.sortBy(fun txn -> txn.Timestamp)
+    |> Seq.fold(fun account txn ->
+        let operation = tryParseSerializedOperation txn.Operation
+        match operation, account with
+        | Some Deposit, _ -> account |> deposit txn.Amount
+        | Some Withdraw, InCredit account -> account |> withdraw txn.Amount
+        | Some Withdraw, Overdrawn _ -> account
+        | None, _ -> account) openingAccount
 
      

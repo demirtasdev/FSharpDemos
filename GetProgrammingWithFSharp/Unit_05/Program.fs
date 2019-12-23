@@ -1,39 +1,47 @@
-﻿namespace Capstone4.Program
+﻿module Capstone
 
 open System
-open Capstone4.Domain
-open Capstone4.Operations
-open Capstone4.Auditing
-open Capstone4.FileRepository
+open Capstone.Domain
+open Capstone.Operations
+open Capstone.Auditing
+open Capstone.FileRepository
 
 // [<AutoOpen>]
 // module CommandParsing =
 //     let isValidCommand cmd = [ 'd'; 'w'; 'x' ] |> List.contains cmd
 //     let isStopCommand = (=) Exit
+type Command = AccountCmd of BankOperation | Exit
+
+[<AutoOpen>]
+module CommandParsing =
+    let tryParse cmd =
+        match cmd with
+        | 'd' -> Some (AccountCmd Deposit)
+        | 'w' -> Some (AccountCmd Withdraw)
+        | 'x' -> Some Exit
+        | _ -> None
 
 [<AutoOpen>]
 module UserInput =
-    let commands = seq {
-        while true do
+    let commands =
+        Seq.initInfinite(fun _ ->
             Console.Write "(d)eposit, (w)ithdraw or e(x)it: "
-            yield Console.ReadKey().KeyChar
-            Console.WriteLine() }
+            let output = Console.ReadKey().KeyChar
+            Console.WriteLine()
+            output)
     
-    // let getAmount command =
-    //     Console.WriteLine()
-    //     Console.Write "Enter Amount: "
-    //     command, Console.ReadLine() |> Decimal.Parse
+    let getAmount command =
+        let captureAmount _ =
+            Console.Write "Enter Amount: "
+            Console.ReadLine() |> Decimal.TryParse
+        Seq.initInfinite captureAmount
+        |> Seq.choose(fun amount ->
+            match amount with
+            | true, amount when amount <= 0M -> None
+            | false, _ -> None
+            | true, amount -> Some(command, amount))
+        |> Seq.head
 
-    let tryGetAmount command =
-        Console.WriteLine()
-        printf "Enter Amount: "
-        let amount = Console.ReadLine() |> Decimal.TryParse
-        match amount with
-        | true, amount -> Some(command, amount)
-        | false, _ -> None
-
-
-module AppStart =
 
     let loadAccountOptional = Option.map loadAccount
 
@@ -43,45 +51,51 @@ module AppStart =
     // let loadAccountFromDisk = Capstone4.FileRepository.findTransactionsOnDisk >> loadAccount
     let tryLoadAccountFromDisk = tryFindTransactionsOnDisk >> loadAccountOptional
 
-    [<EntryPoint>]
-    let main _ =
-        let openingAccount =
-            Console.Write "Please enter your name: "
-            // Console.ReadLine() |> loadAccountFromDisk
-            let owner = Console.ReadLine()
+[<EntryPoint>]
+let main _ =
+    let openingAccount =
+        Console.Write "Please enter your name: "
+        let owner = Console.ReadLine()
+                
+        match tryLoadAccountFromDisk owner with
+        | Some account -> account
+        | None ->
+            InCredit(CreditAccount { AccountId = Guid.NewGuid()
+                                     Balance = 0M
+                                     Owner = { Name = owner } })
+    
+    printfn "Opening balance is £%M" (openingAccount.GetField(fun a -> a.Balance))
 
-            match (tryLoadAccountFromDisk owner) with
-            | Some account -> account
-            | None ->
-                { Balance = 0M
-                  AccountId = Guid.NewGuid()
-                  Owner = {Name = owner}}
-        
-        printfn "Current balance is £%M" openingAccount.Balance
-
-        let processCommand account (command, amount) =
-            printfn ""
-            let account =
-                match command with
-                | Deposit -> account |> depositWithAudit amount
-                | Withdraw -> account |> withdrawWithAudit amount
-                | _ -> { 
-                    AccountId = Guid.Empty
-                    Owner = { Name = "ERROR: INVALID INPUT" }
-                    Balance = 0M }
-            
-            printfn "Current balance is £%M" account.Balance
-            account
-
-        let closingAccount =
-            commands
-            |> Seq.choose tryGetBankOperation
-            |> Seq.takeWhile (fun x -> x <> Exit)
-            |> Seq.choose tryGetAmount
-            |> Seq.fold processCommand openingAccount
-        
+    let processCommand account (command, amount) =
         printfn ""
-        printfn "Closing Balance:\r\n %A" closingAccount
-        Console.ReadKey() |> ignore
+        let account =
+            match command with
+            | Deposit -> depositWithAudit amount account
+            | Withdraw ->
+                match account with
+                | InCredit account -> account |> withdrawWithAudit amount
+                | Overdrawn _ ->
+                    printfn "You cannot withdraw funds as your account is overdrawn!"
+                    account
+        printfn "Current balance is £%M" (account.GetField(fun a -> a.Balance))
+        match account with
+        | InCredit _ -> ()
+        | Overdrawn _ -> printfn "Your account is overdrawn!!"
+        account
 
-        0
+    let closingAccount =
+        commands
+        |> Seq.choose tryParse
+        |> Seq.takeWhile ((<>) Exit)
+        |> Seq.choose(fun cmd ->
+            match cmd with
+            | Exit -> None
+            | AccountCmd cmd -> Some cmd)
+        |> Seq.map getAmount
+        |> Seq.fold processCommand openingAccount
+    
+    printfn ""
+    printfn "Closing Balance:\r\n %A" closingAccount
+    Console.ReadKey() |> ignore
+
+    0

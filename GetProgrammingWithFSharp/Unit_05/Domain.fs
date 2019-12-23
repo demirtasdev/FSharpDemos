@@ -1,4 +1,4 @@
-namespace Capstone4.Domain
+module Capstone.Domain
 
 open System
 
@@ -9,11 +9,10 @@ type CreditAccount = CreditAccount of Account
 type RatedAccount =
     | InCredit of CreditAccount
     | Overdrawn of Account
-
-// type Command =
-//     | Withdraw
-//     | Deposit
-//     | Exit
+    member this.GetField getter =
+        match this with
+        | InCredit (CreditAccount account) -> getter account
+        | Overdrawn account -> getter account
 
 type BankOperation = Deposit | Withdraw
 type Command = AccountCommand of BankOperation | Exit

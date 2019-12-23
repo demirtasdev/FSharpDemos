@@ -1,4 +1,4 @@
-namespace Capstone.Domain
+module Capstone.Domain
 
 open System
 
@@ -8,7 +8,6 @@ type Transaction = { Timestamp : DateTime; Operation : char; Amount : decimal; A
 
 module Transactions =
     
-
     let serialize transaction =
         sprintf "%O***%c***%M***%b" transaction.Timestamp transaction.Operation transaction.Amount transaction.Accepted
 
