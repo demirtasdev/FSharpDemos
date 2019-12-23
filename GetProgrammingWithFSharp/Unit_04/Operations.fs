@@ -1,6 +1,7 @@
-namespace global
+namespace Capstone.Operations
 
 open System
+open Capstone.Domain
 
 module Operations =
     let withdraw amount account =

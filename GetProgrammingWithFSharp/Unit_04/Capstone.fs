@@ -1,14 +1,14 @@
-﻿namespace global
+﻿namespace Capstone
 
 // .NET modules
 open System
 open System.IO
 
 // User-defined modules
-open Auditing
-open Operations
-open Transactions
-open FileRepository
+open Capstone.Auditing
+open Capstone.Operations
+open Capstone.Domain
+open Capstone.FileRepository
 
 [<AutoOpen>]
 module CommandParsing =
@@ -59,7 +59,7 @@ module FileRepository =
             parts.[0], Guid.Parse parts.[1]
         owner, accountId, buildPath(owner, accountId)
                           |> Directory.EnumerateFiles
-                          |> Seq.map (File.ReadAllText >> deserialize)
+                          |> Seq.map (File.ReadAllText >> Transactions.deserialize)
 
     /// Finds all transactions from disk for specific owner.
     let findTransactionsOnDisk owner =
@@ -101,16 +101,16 @@ module UserInput =
     let getAmount command =
         Console.WriteLine()
         Console.Write "Enter Amount: "
-        command, Console.ReadLine() |> Decimal.Parse
+        command, Console.ReadLine() |> decimal
 
 
 
 module AppStart =
     [<EntryPoint>]
     let main argv =
-        let withdrawWithAudit = auditAs 'w' composedLogger withdraw
-        let depositWithAudit = auditAs 'd' composedLogger deposit
-        let loadAccountFromDisk = findTransactionsOnDisk >> loadAccount
+        let withdrawWithAudit = Operations.auditAs 'w' composedLogger Operations.withdraw
+        let depositWithAudit = Operations.auditAs 'd' composedLogger Operations.deposit
+        let loadAccountFromDisk = findTransactionsOnDisk >> Operations.loadAccount
 
         let openingAccount =
             Console.Write "Please enter your name: "

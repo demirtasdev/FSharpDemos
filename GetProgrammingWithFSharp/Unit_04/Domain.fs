@@ -1,4 +1,4 @@
-namespace global
+namespace Capstone.Domain
 
 open System
 

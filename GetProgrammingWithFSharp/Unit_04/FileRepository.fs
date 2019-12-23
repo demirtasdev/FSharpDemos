@@ -1,9 +1,10 @@
-namespace global
+namespace Capstone.FileRepository
+
+open System
+open System.IO
+open Capstone.Domain
 
 module FileRepository =
-    open System
-    open System.IO
-
     let private accountsPath =
         let path = @"accounts"
         Directory.CreateDirectory path |> ignore

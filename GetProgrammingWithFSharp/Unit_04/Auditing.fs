@@ -1,4 +1,8 @@
-namespace global
+namespace Capstone.Auditing
+
+open Capstone.Domain
+open Capstone.Operations
+open Capstone.FileRepository
 
 module Auditing =
     let printTransaction _ accountId transaction =
