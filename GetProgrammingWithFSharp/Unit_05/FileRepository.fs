@@ -3,18 +3,21 @@
 open Capstone4.Domain
 open System.IO
 open System
+open System.Collections.Generic
 
 module FileRepository =
     let private accountsPath =
         let path = @"accounts"
         Directory.CreateDirectory path |> ignore
         path
-    let private findAccountFolder owner =    
-        let folders = Directory.EnumerateDirectories(accountsPath, sprintf "%s_*" owner)
-        if Seq.isEmpty folders then ""
-        else
-            let folder = Seq.head folders
-            DirectoryInfo(folder).Name
+
+
+    let private tryFindAccountFolder owner =
+        let folders = Directory.EnumerateDirectories(accountsPath, sprintf "%s_*" owner) |> Seq.toList
+        match folders with
+        | [] -> None
+        | f -> Some(DirectoryInfo(Seq.head f).Name)
+
     let private buildPath(owner, accountId:Guid) = sprintf @"%s\%s_%O" accountsPath owner accountId
 
     let loadTransactions (folder:string) =
@@ -25,11 +28,14 @@ module FileRepository =
                           |> Directory.EnumerateFiles
                           |> Seq.map (File.ReadAllText >> Transactions.deserialize)
 
+    
+    
     /// Finds all transactions from disk for specific owner.
-    let findTransactionsOnDisk owner =
-        let folder = findAccountFolder owner
-        if String.IsNullOrEmpty folder then owner, Guid.NewGuid(), Seq.empty
-        else loadTransactions folder
+    let tryFindTransactionsOnDisk owner =
+        let folder = tryFindAccountFolder owner
+        match folder with
+        | Some f -> Some(loadTransactions f)
+        | _ -> None
 
     /// Logs to the file system
     let writeTransaction accountId owner transaction =

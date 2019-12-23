@@ -6,10 +6,10 @@ open Capstone4.Operations
 open Capstone4.Auditing
 open Capstone4.FileRepository
 
-[<AutoOpen>]
-module CommandParsing =
-    let isValidCommand cmd = [ 'd'; 'w'; 'x' ] |> List.contains cmd
-    let isStopCommand = (=) 'x'
+// [<AutoOpen>]
+// module CommandParsing =
+//     let isValidCommand cmd = [ 'd'; 'w'; 'x' ] |> List.contains cmd
+//     let isStopCommand = (=) Exit
 
 [<AutoOpen>]
 module UserInput =
@@ -19,39 +19,65 @@ module UserInput =
             yield Console.ReadKey().KeyChar
             Console.WriteLine() }
     
-    let getAmount command =
+    // let getAmount command =
+    //     Console.WriteLine()
+    //     Console.Write "Enter Amount: "
+    //     command, Console.ReadLine() |> Decimal.Parse
+
+    let tryGetAmount command =
         Console.WriteLine()
-        Console.Write "Enter Amount: "
-        command, Console.ReadLine() |> Decimal.Parse
+        printf "Enter Amount: "
+        let amount = Console.ReadLine() |> Decimal.TryParse
+        match amount with
+        | true, amount -> Some(command, amount)
+        | false, _ -> None
 
 
 module AppStart =
 
+    let loadAccountOptional = Option.map loadAccount
+
     let withdrawWithAudit = auditAs "withdraw" composedLogger withdraw
     let depositWithAudit = auditAs "deposit" composedLogger deposit
-    let loadAccountFromDisk = findTransactionsOnDisk >> loadAccount
+
+    // let loadAccountFromDisk = Capstone4.FileRepository.findTransactionsOnDisk >> loadAccount
+    let tryLoadAccountFromDisk = tryFindTransactionsOnDisk >> loadAccountOptional
 
     [<EntryPoint>]
     let main _ =
         let openingAccount =
             Console.Write "Please enter your name: "
-            Console.ReadLine() |> loadAccountFromDisk
+            // Console.ReadLine() |> loadAccountFromDisk
+            let owner = Console.ReadLine()
+
+            match (tryLoadAccountFromDisk owner) with
+            | Some account -> account
+            | None ->
+                { Balance = 0M
+                  AccountId = Guid.NewGuid()
+                  Owner = {Name = owner}}
         
         printfn "Current balance is £%M" openingAccount.Balance
 
         let processCommand account (command, amount) =
             printfn ""
             let account =
-                if command = 'd' then account |> depositWithAudit amount
-                else account |> withdrawWithAudit amount
+                match command with
+                | Deposit -> account |> depositWithAudit amount
+                | Withdraw -> account |> withdrawWithAudit amount
+                | _ -> { 
+                    AccountId = Guid.Empty
+                    Owner = { Name = "ERROR: INVALID INPUT" }
+                    Balance = 0M }
+            
             printfn "Current balance is £%M" account.Balance
             account
 
         let closingAccount =
             commands
-            |> Seq.filter isValidCommand
-            |> Seq.takeWhile (not << isStopCommand)
-            |> Seq.map getAmount
+            |> Seq.choose tryGetBankOperation
+            |> Seq.takeWhile (fun x -> x <> Exit)
+            |> Seq.choose tryGetAmount
             |> Seq.fold processCommand openingAccount
         
         printfn ""
