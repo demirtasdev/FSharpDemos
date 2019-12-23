@@ -1,79 +1,40 @@
-﻿open System
+﻿namespace global
+
+// .NET modules
+open System
 open System.IO
 
-type Customer = { FullName : string }
-type Account = { ID : Guid; Owner : Customer; Balance : decimal }
-type Transaction = { Timestamp : DateTime; Operation : char; Amount : decimal; Accepted : bool }
-
-let consoleCommands = seq {
-    while true do
-        printfn "(d)eposit, (w)ithdraw or e(x)it : "
-        yield Console.ReadKey().KeyChar }
-
-// check whether the user input is valid
-let isValidCommand input =
-    match input with
-    | 'd' | 'w' | 'x' -> true
-    | _ -> false
-
-let isStopCommand input =
-    match input with
-    | 'x' -> true
-    | _ -> false
-
-let getAmount input =
-    if input = 'x' then ('x', 0M)
-    else
-        printf "%sEnter Amount: " Environment.NewLine
-        let amount = Console.ReadLine() |> decimal
-        printfn "%s" Environment.NewLine
-        (input, amount)
+// User-defined modules
+open Auditing
+open Operations
+open Transactions
+open FileRepository
 
 [<AutoOpen>]
-module Operations =
-    let withdraw amount account =
-        if amount > account.Balance then account
-        else { account with Balance = account.Balance - amount }
+module CommandParsing =
+    let consoleCommands = seq {
+        while true do
+            printfn "(d)eposit, (w)ithdraw or e(x)it : "
+            yield Console.ReadKey().KeyChar }
 
-    /// Deposits an amount into an account
-    let deposit amount account =
-        { account with Balance = account.Balance + amount }    
+    // check whether the user input is valid
+    let isValidCommand input =
+        match input with
+        | 'd' | 'w' | 'x' -> true
+        | _ -> false
 
-    let auditAs operationName audit operation amount account =
-        let updatedAccount = operation amount account
-        
-        let accountIsUnchanged = (updatedAccount = account)
+    let isStopCommand input =
+        match input with
+        | 'x' -> true
+        | _ -> false
 
-        let transaction =
-            let transaction = { Operation = operationName; Amount = amount; Timestamp = DateTime.UtcNow; Accepted = true }
-            if accountIsUnchanged then { transaction with Accepted = false }
-            else transaction
-
-        audit account.ID account.Owner.FullName transaction
-        updatedAccount
-
-    let loadAccount (owner, accountId, transactions) =
-        let openingAccount = { ID = accountId; Balance = 0M; Owner = { FullName = owner } }
-
-        transactions
-        |> Seq.sortBy(fun txn -> txn.Timestamp)
-        |> Seq.fold(fun account txn ->
-            if txn.Operation = 'w' then account |> withdraw txn.Amount
-            else account |> deposit txn.Amount) openingAccount
-
-
-[<AutoOpen>]
-module Transactions =
-    let serialize transaction =
-        sprintf "%O***%c***%M***%b" transaction.Timestamp transaction.Operation transaction.Amount transaction.Accepted
-
-    /// Deserializes a transaction
-    let deserialize (fileContents:string) =
-        let parts = fileContents.Split([|"***"|], StringSplitOptions.None)
-        { Timestamp = DateTime.Parse parts.[0]
-          Operation = parts.[1] |> char
-          Amount = Decimal.Parse parts.[2]
-          Accepted = Boolean.Parse parts.[3] }
+    let getAmount input =
+        if input = 'x' then ('x', 0M)
+        else
+            printf "%sEnter Amount: " Environment.NewLine
+            let amount = Console.ReadLine() |> decimal
+            printfn "%s" Environment.NewLine
+            (input, amount)
 
 
 [<AutoOpen>]
@@ -130,11 +91,6 @@ module Auditing =
             |> List.iter(fun logger -> logger accountId owner transaction)
 
 [<AutoOpen>]
-module CommandParsing =
-    let isValidCommand cmd = [ 'd'; 'w'; 'x' ] |> List.contains cmd
-    let isStopCommand = (=) 'x'
-
-[<AutoOpen>]
 module UserInput =
     let commands = seq {
         while true do
@@ -147,35 +103,37 @@ module UserInput =
         Console.Write "Enter Amount: "
         command, Console.ReadLine() |> Decimal.Parse
 
-let withdrawWithAudit = auditAs 'w' composedLogger withdraw
-let depositWithAudit = auditAs 'd' composedLogger deposit
-let loadAccountFromDisk = findTransactionsOnDisk >> loadAccount
 
 
-[<EntryPoint>]
-let main argv =
-    let openingAccount =
-        Console.Write "Please enter your name: "
-        Console.ReadLine() |> loadAccountFromDisk
-    
-    printfn "Current balance is £%M" openingAccount.Balance
+module AppStart =
+    [<EntryPoint>]
+    let main argv =
+        let withdrawWithAudit = auditAs 'w' composedLogger withdraw
+        let depositWithAudit = auditAs 'd' composedLogger deposit
+        let loadAccountFromDisk = findTransactionsOnDisk >> loadAccount
 
-    let processCommand account (command, amount) =
+        let openingAccount =
+            Console.Write "Please enter your name: "
+            Console.ReadLine() |> loadAccountFromDisk
+        
+        printfn "Current balance is £%M" openingAccount.Balance
+
+        let processCommand account (command, amount) =
+            printfn ""
+            let account =
+                if command = 'd' then account |> depositWithAudit amount
+                else account |> withdrawWithAudit amount
+            printfn "Current balance is £%M" account.Balance
+            account
+
+        let closingAccount =
+            commands
+            |> Seq.filter isValidCommand
+            |> Seq.takeWhile (not << isStopCommand)
+            |> Seq.map getAmount
+            |> Seq.fold processCommand openingAccount
+        
         printfn ""
-        let account =
-            if command = 'd' then account |> depositWithAudit amount
-            else account |> withdrawWithAudit amount
-        printfn "Current balance is £%M" account.Balance
-        account
-
-    let closingAccount =
-        commands
-        |> Seq.filter isValidCommand
-        |> Seq.takeWhile (not << isStopCommand)
-        |> Seq.map getAmount
-        |> Seq.fold processCommand openingAccount
-    
-    printfn ""
-    printfn "Closing Balance:\r\n %A" closingAccount
-    Console.ReadKey() |> ignore
-    0 // return an integer exit code
+        printfn "Closing Balance:\r\n %A" closingAccount
+        Console.ReadKey() |> ignore
+        0 // return an integer exit code

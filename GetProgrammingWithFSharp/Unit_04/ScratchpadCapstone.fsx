@@ -3,10 +3,10 @@ open System
 type Customer =
     { Name:string }
 
-type Account =
-    { ID:Guid 
-      Balance:decimal
-      Owner:Customer }
+type Account = { 
+    ID:Guid 
+    Balance:decimal 
+    Owner:Customer }
 
 // attempt withdrawal
 let withdraw amount ( account:Account ) =
