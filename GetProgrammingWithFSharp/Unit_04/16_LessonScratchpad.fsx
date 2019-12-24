@@ -1,3 +1,5 @@
+open System
+
 // >>[16.1]>> #_MAP_#
 // . the most common collection function you'll ever use
 // . converts all items in a collection from one shape to another
@@ -63,3 +65,82 @@ let collectList =
     groupOfCust
     |> List.collect getOrders
 
+// ---- 24/12/2019 -----
+
+// 16.1.4 - PAIRWISE
+// i: Takes a list and returns a new list of tuple pairs of the original adjacent items.
+let intList = [ 1; 2; 3; 4; 5 ]
+let pairs = List.pairwise intList
+
+// Listing 16.3
+// -> Using pairwise within the context of a larger pipeline:
+// List of dates:
+[ DateTime(2010, 5, 1)
+  DateTime(2010, 6, 1)
+  DateTime(2010, 6, 12)
+  DateTime(2010, 7, 3) ]
+// Pairwise adjacent dates:
+|> List.pairwise
+// Substract the dates from one another as timespan, and
+// return the total days between the two dates.
+|> List.map ((fun (a, b) -> b - a) >> (fun time -> time.TotalDays))
+
+
+// A type and a list to experiment with:
+type OGs =
+    { Name: string 
+      Town: string}
+let listOfOGs =  
+    [ { Name = "Isaac"; Town = "London" } 
+      { Name = "Sara"; Town = "Birmingham" }
+      { Name = "Tim"; Town = "London" }
+      { Name = "Michelle"; Town = "Manchester" } ]
+
+// 16.2.1 -> GROUPBY
+// i: Group the members of a list according to a certain function
+// s: projection: ('T -> 'Key) -> list: 'T list -> ('Key * 'T list) list
+let groupedList =
+    listOfOGs
+    |> List.groupBy (fun og -> og.Town)
+
+// 16.2.2 -> COUNTBY
+// i: Return a list of keys according to a function for each iteration of said key in the list. 
+//    Make a new list of these keys and the amount of times they appear in the previous list.
+// s: projection: ('T -> 'Key) -> list: 'T list -> ('Key * int) list
+let countedBy =
+    listOfOGs
+    |> List.countBy (fun og -> og.Town)
+
+// 16.2.3 -> PARTITION
+// i: Slightly simpler version of groupBy. Supply a predicate and it returns two collections
+//    partitioned based on the predicate.
+// s: predicate: ('T -> bool) -> list: 'T list -> ('T list * 'T list)
+
+// Listing 16.4
+// -> Splitting a collection in two based on a predicate
+// Decomposing the tuple result into two lists:
+let londonCustomers, otherCustomers =
+    // Precivate function to split the list:
+    listOfOGs |> List.partition(fun c -> c.Town = "London")
+
+// Listing 16.5
+// -> Simple aggreagation functions in F#
+// Aggregate functions take in a collection of items and merge them into a smaller collection.
+// Build a list of 10 floats:
+let floats = [ 1.0 .. 10.0 ]
+// Execute a set of aggregate functions:
+let total = floats |> List.sum
+let average = floats |> List.average
+let max = floats |> List.max
+let min = floats |> List.min
+
+// Listing 16.6
+// -> Converting between collections
+let numberOne =
+    // Construct an int list:
+    [ 1 .. 5 ]
+    // Convert from an int list to an int array:
+    |> List.toArray
+    // Convert from an int array to an int sequence:
+    |> Seq.ofArray
+    |> Seq.head
