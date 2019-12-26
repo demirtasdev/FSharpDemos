@@ -85,7 +85,6 @@ let pairs = List.pairwise intList
 // return the total days between the two dates.
 |> List.map ((fun (a, b) -> b - a) >> (fun time -> time.TotalDays))
 
-
 // A type and a list to experiment with:
 type OGs =
     { Name: string 
@@ -144,3 +143,7 @@ let numberOne =
     // Convert from an int array to an int sequence:
     |> Seq.ofArray
     |> Seq.head
+
+
+for _ in 1..3 do printf "Ho! "
+printf "Merry Christmas!"

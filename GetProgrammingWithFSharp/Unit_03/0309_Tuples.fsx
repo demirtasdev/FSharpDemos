@@ -20,6 +20,8 @@ let fname, sname = parseName "Isaac Abraham"
 // 2. deconstruct the tuple by assigning them to seperate values using a comma
 // 3. tuples can be of arbitrary length and a mixture of types
 
+
+
 // NOW YOU TRY
 let parse (person:string) =
     let parts = person.Split(' ')
@@ -28,7 +30,10 @@ let parse (person:string) =
     let score = int parts.[2]
     player, game, score
 
-let p, g, s = parse "Alican ProblemSolving 9"
+let (p, g, s) = parse "Alican ProblemSolving 9"
+
+let name21, age21 = "Alican", 21
+printfn "%s" name21
 
 // Listing 9.4:
 // -> Returning more-complex arbitrary data pairs in F#
@@ -43,6 +48,8 @@ let (forename1, surname1), theAge1 = nameAndAge
 // -> Using wildcards with tuples
 let nameAndAge1 = "Jane", "Smith", 25
 let forename2, surname2, _ = nameAndAge1
+
+
 
 // Listing 9.6:
 // -> Type inference with tuples:
@@ -67,8 +74,8 @@ let addNumbers1 arguments =
 // Listing 9.9
 // -> Intelligently nameing functions
 // let a, b = getData() // <-- Poor Naming
-// let a, b = getBankDetails() // <-- Improved Naming
-// let a, b = getSortCodeAndAccountNumber // <-- Better Naming
+// let a, b = getBankDetails() <-- Improved Naming
+// let a, b = getSortCodeAndAccountNumber <-- Better Naming
 
 // TRY THIS:
 

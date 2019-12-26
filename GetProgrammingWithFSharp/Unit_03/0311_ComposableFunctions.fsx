@@ -104,7 +104,7 @@ checkCreation(
 
 // Listing 11.9
 // -> Chaining three functions together using the pipeline operator:
-// Directory.GetCurrentDirectory()  //-> Returns a string.
+Directory.GetCurrentDirectory()  //-> Returns a string.
 |> Directory.GetCreationTime     //-> Takes in a string, returns DateTime.
 |> checkCreation                 //-> Takes in a DateTime, prints to console.
 

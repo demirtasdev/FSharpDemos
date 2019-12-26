@@ -9,7 +9,9 @@ open System
 type Address =
     { Street: string
       Town: string 
-      City: string }
+      City: string }      
+
+  
 // with this you get:
 // 1. a constructor that requires all fields to be provided
 // 2. public access for all fields (which are read-only)  
@@ -114,8 +116,7 @@ let updateCustomer (customer:Customer) =
     printfn "new age: %i" updatedCust.Age
     updatedCust
 
-let newCust = updateCustomer customer
-
+let newCust = customer |> updateCustomer
 // i: at runtime records compile into classes
 // i: default type of equality checking for records is -> Structural Equality
 
@@ -127,7 +128,7 @@ let custo =
       Surname = failwith "Not Implemented"
       Age = failwith "Not Implemented"
       Address = failwith "Not Implemented"
-      EmailAddress = failwith "Not Implemented" }
+      EmailAddress = failwith "Not Implemented"}
 
 let shadowPC = { Make = "Dell"; OperatingSystem = "MS Windows"; Memory = 32; CpuSpeed = 3.5 }
 let shadowPC = { shadowPC with OperatingSystem = "Ubuntu" } 
