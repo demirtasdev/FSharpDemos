@@ -78,12 +78,13 @@ let limitWithPM score years =
 // NOW YOU TRY:
 let getCreditLimit customer =
     match customer with
-    | _, 1 -> 520
     | "medium", 1 -> 500
+    | _, 1 -> 520
     | "good", 0 | "good", 1 -> 750
     | "good", 2 -> 1000
     | "good", _ -> 2000
     | _, 0 -> 250
+    | _ -> failwith "ERROR"
 
 getCreditLimit ("bad", 1)
 
