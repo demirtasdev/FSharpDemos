@@ -196,14 +196,14 @@ let buildValidator (rules: Rule list) =
     rules
     |> List.reduce(fun firstRule secondRule ->
         // Higher order function:
-        fun word -> 
+        fun word ->
             // Run first rule:
             let passed, error = firstRule word
             // Passed, move on to next rule:
             if passed then
                 let passed, error = secondRule word
                 if passed then true, "Success!" else false, error
-            // Failed, return error:            
+            // Failed, return error:      
             else false, error)
 
 // NOW YOU TRY:
@@ -231,7 +231,7 @@ let rules: Rule list =
     [ Rules.threeWordsMin;
       Rules.thirtyCharactersMax;
       Rules.allCapitals;
-      Rules.noDigits ]        
+      Rules.noDigits ]
 
 let validate = rules |> buildValidator
 
