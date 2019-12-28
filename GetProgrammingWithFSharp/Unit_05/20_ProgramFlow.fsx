@@ -169,7 +169,7 @@ let getStatus customer =
 
 // Listing 20.10
 // -> Combining multiple patterns
-match customer with
+match customerList with
 // Pattern matching agains a list of three items with specific fields
 | [ { Name = "Tanya" }; { Balance = 21}; _ ] -> "It's a match..."
 | _ -> "No match!"

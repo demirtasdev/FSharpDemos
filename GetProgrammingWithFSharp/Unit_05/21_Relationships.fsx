@@ -21,6 +21,7 @@ let myPc =
 // Listing 21.2
 // -> Discriminated Unions in F#
 
+
 // base type:
 type DiskDU =
 // HardDisk subtype, containing two custom fields as metadata
