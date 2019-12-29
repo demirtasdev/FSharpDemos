@@ -1,6 +1,6 @@
 open System
 
-// Unit 20: PROGRAM FLOW
+// Lesson 20: PROGRAM FLOW
 
 // Q1: Write both types of for loops
 let listA = [ 0 .. 10 ]
