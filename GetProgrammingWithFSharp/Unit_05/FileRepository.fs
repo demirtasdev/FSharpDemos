@@ -1,22 +1,31 @@
-﻿module Capstone.FileRepository
+﻿module Capstone4.FileRepository
 
-open Capstone.Domain
+open Capstone4.Domain
 open System.IO
 open System
-open System.Collections.Generic
 
 let private accountsPath =
     let path = @"accounts"
     Directory.CreateDirectory path |> ignore
     path
 
+// let private findAccountFolder owner =    
+//     let folders = Directory.EnumerateDirectories(accountsPath, sprintf "%s_*" owner)
+//     if Seq.isEmpty folders then ""
+//     else
+//         let folder = Seq.head folders
+//         DirectoryInfo(folder).Name
+// let private buildPath(owner, accountId:Guid) = sprintf @"%s\%s_%O" accountsPath owner accountId
 
-let private tryFindAccountFolder owner =
-    let folders = Directory.EnumerateDirectories(accountsPath, sprintf "%s_*" owner) |> Seq.toList
+let private findAccountFolder owner =    
+    let folders = 
+        Directory.EnumerateDirectories(accountsPath, sprintf "%s_*" owner) 
+        |> Seq.toList
     match folders with
     | [] -> None
-    | f :: _ -> Some(DirectoryInfo(f).Name)
-
+    | _ ->
+        let folder = List.head folders
+        Some (DirectoryInfo(folder).Name)
 let private buildPath(owner, accountId:Guid) = sprintf @"%s\%s_%O" accountsPath owner accountId
 
 let loadTransactions (folder:string) =
@@ -27,10 +36,12 @@ let loadTransactions (folder:string) =
                       |> Directory.EnumerateFiles
                       |> Seq.map (File.ReadAllText >> Transactions.deserialize)
 
-
-
 /// Finds all transactions from disk for specific owner.
-let tryFindTransactionsOnDisk = tryFindAccountFolder >> Option.map loadTransactions
+let tryFindTransactionsOnDisk owner =
+    let folder = findAccountFolder owner
+    match folder with
+    | Some folder -> Some (loadTransactions folder)
+    | None -> None
 
 /// Logs to the file system
 let writeTransaction accountId owner transaction =

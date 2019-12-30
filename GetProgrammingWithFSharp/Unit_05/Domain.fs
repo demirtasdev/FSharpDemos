@@ -1,22 +1,21 @@
-module Capstone.Domain
+namespace Capstone4.Domain
 
 open System
 
 type Customer = { Name : string }
 type Transaction = { Timestamp : DateTime; Operation : string; Amount : decimal; Accepted : bool }
+
 type Account = { AccountId : Guid; Owner : Customer; Balance : decimal }
+// Marker type for an account in credit
 type CreditAccount = CreditAccount of Account
+// Categorization of Account
 type RatedAccount =
-    | InCredit of CreditAccount
-    | Overdrawn of Account
-    member this.GetField getter =
-        match this with
-        | InCredit (CreditAccount account) -> getter account
-        | Overdrawn account -> getter account
+| InCredit of CreditAccount
+| Overdrawn of Account
 
-type BankOperation = Deposit | Withdraw
+type BankOperation = | Withdraw | Deposit
 type Command = AccountCommand of BankOperation | Exit
-
+    
 module Transactions =
     /// Serializes a transaction
     let serialize transaction =
