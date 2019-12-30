@@ -8,7 +8,7 @@ let myAge = Some 21
 // without the foreknowledge that the value exists. This 
 // may throw an exception when done on an option of None.
 
-// Q3: Pattern Match against an option
+// Q3: Pattern Match against an optionk
 match myAge with
 | Some age -> printfn "Age stated: %d" age
 | None -> printfn "Age not stated."

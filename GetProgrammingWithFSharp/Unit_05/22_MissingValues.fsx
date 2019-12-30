@@ -98,22 +98,28 @@ let tryFindCustomer cId =
 let getSafetyScore customer = customer.SafetyScore
 // Binding both functions together:
 let score = tryFindCustomer 10 |> Option.bind getSafetyScore
+    // attempt withdrawal function
+    let withdraw ( account:Account ) =
+        printfn "How much would you like to withdraw?"
+        let amount = decimal <| Console.ReadLine()
+        
+        // check whether the customer has sufficient funds
+        match amount with
+        | a when ( a <= account.Balance ) ->
 
+            // bind the new balance to a keyword
+            let newBalance = account.Balance - amount
 
-
-// Listing 22.8
-// -> Filtering an option
-let test1 = Some 5 |> Option.filter (fun x -> x > 5)
-let test2 = Some 5 |> Option.filter (fun x -> x = 5)
-
-
-// NOW YOU TRY
-let tryLoadCustomer customerId =
-    match customerId with
-    | id when id >= 2 && id <= 7 -> 
-        Some (sprintf "Customer %d" id)
-    | _ -> None
-
+            printfn "Deposit successful. Current Balance: %.2f" newBalance
+            printfn "Could we help with anything else?" 
+            transactionLoop { ID = account.ID ; 
+                              Balance = newBalance ; 
+                              Owner = account.Owner }
+        | _ ->  
+            printfn "Withdrawal failed. Insufficient funds."
+            transactionLoop { ID = account.ID ; 
+                              Balance = account.Balance ; 
+                              Owner = account.Owner }
 let customerIds = [ 0 .. 10 ]   
 
 customerIds |> List.choose tryLoadCustomer
