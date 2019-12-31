@@ -3,6 +3,10 @@ module Capstone4.Operations
 open System
 open Capstone4.Domain
 
+let declassifyAccount ratedAccount =
+    match ratedAccount with
+    | InCredit(CreditAccount account )
+    | Overdrawn account -> account
 
 let classifyAccount account =
     if account.Balance >= 0M then (InCredit(CreditAccount account))
@@ -17,22 +21,43 @@ let withdraw amount (CreditAccount account) =
 
 let withdrawSafe amount ratedAccount =
     match ratedAccount with
-    | InCredit account -> account |> withdraw amount
+    | InCredit(CreditAccount account) -> 
+        CreditAccount account |> withdraw amount
     | Overdrawn _ ->
         printfn "Your account is overdrawn - withdrawal rejected."
         ratedAccount // return input back out
 
+let withdrawForAudit amount account =
+    let ratedAccount = account |> classifyAccount
+
+    match ratedAccount with
+    | InCredit(CreditAccount acc) ->
+        CreditAccount acc 
+        |> withdraw amount 
+        |> declassifyAccount
+    | Overdrawn account ->
+        printfn "Your account is overdrawn - withdrawal rejected."
+        account
+
 /// Deposits an amount into an account
-let deposit amount account =
+let deposit amount ratedAccount =
     let account =
-        match account with
+        match ratedAccount with
         | InCredit (CreditAccount account) -> account
         | Overdrawn account -> account
     { account with Balance = account.Balance + amount }    
     |> classifyAccount
 
+let depositForAudit amount account =
+    { account with Balance = account.Balance + amount }
+
 /// Runs some account operation such as withdraw or deposit with auditing.
-let auditAs operationName audit operation amount account =
+let auditAs operationName audit operation amount ratedAccount =
+    let account : Account =
+        match ratedAccount with
+        | InCredit(CreditAccount acc) -> acc
+        | Overdrawn acc -> acc
+
     let updatedAccount = operation amount account
     
     let accountIsUnchanged = (updatedAccount = account)
@@ -82,7 +107,7 @@ let tryParseCommand char =
 let tryGetBankOperation cmd =
     match cmd with
     | Exit -> None
-    | AccountCommand op -> Some op
+    | AccountCommand operation -> Some operation
 
 // let loadAccountOptional value =
 //     match value with

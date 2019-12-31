@@ -5,8 +5,8 @@ open Capstone4.Domain
 open Capstone4.Operations
 open Capstone4.FileRepository
 
-let withdrawWithAudit = auditAs "withdraw" Auditing.composedLogger withdraw
-let depositWithAudit = auditAs "deposit" Auditing.composedLogger deposit
+let withdrawWithAudit = auditAs "withdraw" Auditing.composedLogger withdrawForAudit
+let depositWithAudit = auditAs "deposit" Auditing.composedLogger depositForAudit
 let tryLoadAccountFromDisk = FileRepository.tryFindTransactionsOnDisk >> Operations.loadAccountOptional
 
 [<AutoOpen>]
@@ -38,9 +38,14 @@ let main _ =
         | None ->
             { Balance = 0M 
               AccountId = Guid.NewGuid()
-              Owner = { Name = owner }}
+              Owner = { Name = owner }} |> classifyAccount
 
-    printfn "Current balance is £%M" openingAccount.Balance
+    let account =
+        match openingAccount with
+        | InCredit (CreditAccount acc) -> acc
+        | Overdrawn acc -> acc
+
+    printfn "Current balance is £%M" account.Balance
 
     //   let processCommand account (command, amount) =
     //     printfn ""
@@ -59,26 +64,32 @@ let main _ =
     //     | Overdrawn _ -> printfn "Your account is overdrawn!!"
     //     account
 
-    let processCommand account (command, amount) =
+    let processCommand ratedAccount (command, amount) =
         printfn ""
-        let account =
+        let returnAccount =
             match command with
-            | Deposit -> account |> depositWithAudit amount
+            | Deposit -> 
+                ratedAccount
+                |> depositWithAudit amount
+                |> classifyAccount
             | Withdraw -> 
-                match account with
-                | InCredit account -> account |> withdrawWithAudit amount
+                match ratedAccount with
+                | InCredit (CreditAccount _) -> 
+                    ratedAccount
+                    |> withdrawWithAudit amount 
+                    |> classifyAccount
                 | Overdrawn _ ->
                     printfn "Withdraw failed. Account overdrawn."
-                    account
-        printfn "Current balance is £%M" account.Balance
-        account
+                    ratedAccount
 
-    let foo: BankOperation seq =
-        commands
-        // Filtering invalid characters from the stream
-        |> Seq.choose tryParseCommand
-        |> Seq.takeWhile (fun (c: Command) -> c <> Exit)
-        |> Seq.choose tryGetBankOperation
+        match returnAccount with
+        | InCredit (CreditAccount account)
+        | Overdrawn account ->
+            printfn "Current balance is £%M" account.Balance
+                
+        returnAccount
+
+    
 
 // folder: Account -> BankOperation -> Account
 
@@ -89,8 +100,8 @@ let main _ =
         |> Seq.takeWhile (fun (c: Command) -> c <>  Exit)
         |> Seq.choose tryGetBankOperation
         |> Seq.choose tryGetAmount
-        // Check whether the character is the stop command
         |> Seq.fold processCommand openingAccount
+        // |> Seq.fold processCommand openingAccount
     
     printfn ""
     printfn "Closing Balance:\r\n %A" closingAccount

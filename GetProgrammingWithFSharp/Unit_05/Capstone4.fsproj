@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Capstone4</RootNamespace>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Domain.fs" />
+    <Compile Include="Operations.fs" />
+    <Compile Include="FileRepository.fs" />
+    <Compile Include="Auditing.fs" />
+    <Compile Include="Program.fs" />
+    <None Include="Scratchpad.fsx" />
+  </ItemGroup>
+</Project>
