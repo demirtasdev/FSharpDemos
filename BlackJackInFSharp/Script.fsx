@@ -16,6 +16,7 @@ type Numbers =
 type Card = { Suit: Suits; Number: Numbers }
 type CardCollection = { Cards: Card list }
 
+// Wrapper types for "Hand" and "Deck" Card lists
 type Hand = Hand of CardCollection
 type Deck = Deck of CardCollection
 
@@ -23,8 +24,6 @@ type Deck = Deck of CardCollection
 type User = { Name: string }
 // DU for player =>
 type Player = Player of User: User * Hand: Hand
-
-
 
 // Generate a deck of cards populated with every possible combination =>
 let generateDeck =
@@ -34,79 +33,107 @@ let generateDeck =
                 { Suit = enum<Suits>(x); Number = enum<Numbers>(y) } ] }
         
 // Shuffle the deck, putting the cards in a random order =>
-let rec shuffleDeck (indexer: int option) (pack: Card list) =
+let rec tryShuffleDeck (indexer: int option) (pack: Deck option) =
     // Set an incrementor according to the indexer passed (or not) =>
     let incrementor =
         match indexer with
         | Some x -> x + 1
         | None -> 0
 
+    let cardList =
+        match pack with
+        | Some ( Deck cardCollection ) -> cardCollection.Cards
+        | None -> []
+
     // Take action according to the incrementor =>
     match incrementor with
     | inc when inc < 0 -> None
     | inc when inc <= 51 ->
-        let currentCard = pack.[incrementor]
-        let randomCard = pack.[ Random().Next(0, 51) ]
-        let pack = 
-            [ for card in pack do 
-                match card with
-                | card when card = currentCard -> randomCard
-                | card when card = randomCard -> currentCard
-                | _ -> card ]
-        pack |> shuffleDeck (Some incrementor)
-    | _ -> Some pack
+        let currentCard = cardList.[incrementor]
+        let randomCard = cardList.[ Random().Next(0, 51) ]
+        let deck = 
+            Deck 
+                { Cards = 
+                    [ for card in cardList do 
+                        if card = currentCard then randomCard
+                        elif card = randomCard then currentCard
+                        else card ] }
+        Some deck |> tryShuffleDeck (Some incrementor)
+    | _ -> Some (Deck { Cards = cardList })
+
+// TRY SHUFFLING THE DECK
+tryShuffleDeck None (Some generateDeck)
 
 // Take a deck and return one card and the rest of the cards from it as option
-let drawCard (deck: Card list) =
+let tryDrawCard (deck: Deck) =
     match deck with
-    | [] -> None
-    | (firstCard :: theRest) -> 
-        Some (firstCard, theRest)
+    | Deck( { Cards = [] } ) -> None
+    | Deck( { Cards = (firstCard :: theRest) } ) -> 
+        Some (firstCard, Deck({ Cards = theRest }))
+
+// try drawing a card
+generateDeck |> tryDrawCard
 
 // Take a deck and return two cards, and the rest of the cards from it as option
-let dealHand (deck: Card list) =
-    match (deck |> drawCard) with 
-    | Some(firstDraw, rest) ->
-        match (rest |> drawCard) with
-        | Some (secondDraw, rest) ->
-            Some ((firstDraw, secondDraw), rest)
+let tryDealHand (deck: Deck) =
+    match (deck |> tryDrawCard) with 
+    | Some(firstDraw, theRestAfterFirstDraw) ->
+        match (theRestAfterFirstDraw |> tryDrawCard) with
+        | Some (secondDraw, theRestAfterSecondDraw) ->
+            Some (Hand { Cards = [ firstDraw; secondDraw ] }, theRestAfterSecondDraw)
         | None -> None        
     | None -> None
 
+// try dealing a hand
+generateDeck |> tryDealHand
+
 // Take the number of players (N) and created a UserList with the length N
-let setPlayers numberOfPlayers = 
+let setUsers numberOfPlayers = 
     [ for x = 1 to numberOfPlayers do { Name = sprintf "P%d" x } ]
 
-// takes a list of users and gives each user 2 cards and returns them as a list of players 
-// let rec dealHands (deck: Card list option) (hands: Hand list option) (users: User list) =
-//     match deck with
-//     | Some remaining ->
-//         for user in users do
-//             match deck |> dealHand with
-//             | Some (hand, rest) ->
-//                 match hands with
-//                 | Some hands -> 
-//                     dealHands((Some rest), (hands |> List.append hand), user)
-//                 | None ->
-//                     dealHands ((Some generateDeck), None, users)
-//             | None -> None
-//     | None -> 
-//          dealHands ((Some generateDeck), None, users)
+// try setting 2 players
+2 |> setUsers
 
-let rec startGame userList cardList (deck: Deck option) =
-    let currentDeck =
-        match deck with
-        | Some deck -> deck
-        | None -> generateDeck
+let userList = Some (2 |> setUsers)
+let deck : Deck option = None
+let playerList : Player list option = None
 
-    match userList with
-    | None | Some [] -> None
-    | Some list when list.Length < 2 -> None
-    | Some list -> [ for user in list do Player(user, hand) ] 
 
-// type Player = Player of User: User * Hand: Hand
+// Start the game by dealing hands
+let rec startGame 
+    (deck: Deck option) 
+    (playerList: Player list option) 
+    (userList: User list option) =
 
-// takes a list of users and gives each user 2 cards and returns them as a list of players
-// let dealHands : User list -> Card list -> Person list = 
-//     fun users cards ->
-//         users |> List.fold  
+    // find the current state of the deck
+    let currentDeck = match deck with | Some deckInput -> deckInput | None -> generateDeck
+    let currentPlayers = match playerList with | Some players -> players | None -> []
+    let currentUsers = match userList with | Some users -> users | None -> []
+
+    match currentUsers, currentPlayers with
+    // uList has more members than pList -> ...
+    | users, players 
+        when users.Length >= 2  
+        && players.Length < users.Length ->
+            match (currentDeck |> tryDealHand) with
+            // PM to deconstruct the result
+            | Some(theHand, theRest) ->
+                //I've bound some keywords below for readability's sake. Could be inline
+                let user = users.[ players.Length ]
+                let newPlayer = Player(user, theHand)
+                let newPlayerList = players @ [ newPlayer ]
+                match players, users with
+                | pList, uList when pList.Length < uList.Length ->
+                    (Some uList) 
+                    |> startGame (Some theRest) (Some newPlayerList)
+                | _ -> Some (players, theRest)
+            | _ -> None
+    | _ ->
+        match (playerList, deck) with
+        | Some pList, Some deck -> Some(pList, deck)
+        | _ -> None
+
+// Try starting game:
+let users = 2 |> setUsers
+let shuffledDeck = tryShuffleDeck None (Some generateDeck)
+Some users |> startGame shuffledDeck None
