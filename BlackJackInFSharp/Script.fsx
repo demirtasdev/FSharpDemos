@@ -7,7 +7,7 @@ type Suits =
 | Diamonds = 3
 | Spades = 4
 
-// Enum type for numbers =>
+// Enum type for numbers
 type Numbers =
 | Ace = 1 | Two = 2 | Three = 3 | Four = 4 | Five = 5 | Six = 6 | Seven = 7 
 | Eight = 8 | Nine = 9 | Ten = 10 | Jack = 11 | Queen = 12 | King = 13
@@ -15,15 +15,26 @@ type Numbers =
 // Records for Cards, and Hand which is a list of Cards =>
 type Card = { Suit: Suits; Number: Numbers }
 type CardCollection = { Cards: Card list }
-
 // Wrapper types for "Hand" and "Deck" Card lists
 type Hand = Hand of CardCollection
 type Deck = Deck of CardCollection
-
 // Record for User =>
 type User = { Name: string }
 // DU for player =>
 type Player = Player of User: User * Hand: Hand
+
+// ACTIVE PATTERNS
+// Get the User of a Player
+let (|UserOf|) player = match player with Player (user, _) -> user
+// Get the Cards of a Player
+let (|PlayerCards|) player = match player with Player (_, (Hand {Cards = cards})) -> cards
+// Get the Cards of a Hand
+let (|HandCards|) hand = match hand with Hand { Cards = cards } -> cards
+// Get the Cards of a Deck if it has any.
+let (|DeckCards|EmptyDeck|) deck = 
+    match deck with 
+    | Deck { Cards = cards } when cards |> List.isEmpty -> EmptyDeck
+    | Deck { Cards = cards } -> DeckCards cards
 
 // Generate a deck of cards populated with every possible combination =>
 let generateDeck =
@@ -136,4 +147,18 @@ let rec startGame
 // Try starting game:
 let users = 2 |> setUsers
 let shuffledDeck = tryShuffleDeck None (Some generateDeck)
-Some users |> startGame shuffledDeck None
+let gameOn = Some users |> startGame shuffledDeck None
+
+let tryServePlayer (player: Player) (deck: Deck) =
+    let user = match player with UserOf user -> user
+    let cardList = match player with PlayerCards cards -> cards
+    
+    match deck with
+    | DeckCards cards ->
+        let newPlayer = Player(user, Hand {Cards = cards.Head :: cardList}) 
+        let newDeck = Deck {Cards = cards.Tail}
+        Some (newPlayer, newDeck)
+    | EmptyDeck -> None
+
+// TODO: decouple from 'gameOn' the player list and the deck, 
+// send them to try ServePlayer to test the function
