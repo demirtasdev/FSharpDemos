@@ -2,15 +2,24 @@ open System
 
 [<AutoOpen>]
 module Domain =
-// DU for Suir
+
     type Suit =
         | Clubs
         | Hearts
         | Diamonds
         | Spades
 
-    // DU for Ranks
-    type Number = Two | Three | Four | Five | Six | Seven | Eight | Nine | Ten
+    type Number = 
+        | Two 
+        | Three 
+        | Four 
+        | Five 
+        | Six 
+        | Seven 
+        | Eight 
+        | Nine 
+        | Ten
+
     type Rank =
         | Ace
         | King
@@ -18,106 +27,139 @@ module Domain =
         | Jack
         | Number of Number
 
-    // Records for Cards, and Hand which is a list of Cards =>
-    type Card = { Suit: Suit; Rank: Rank }
-    // Wrapper types for "Hand" and "Deck" Card lists
-    type Hand =
-        | Hand of Card list
-        member this.Cards = match this with Hand cardList -> cardList
-    type Deck = 
-        | Deck of Card list
-        member this.Cards = match this with Deck cardList -> cardList
+    type Card = 
+        { Suit: Suit
+          Rank: Rank }
+   
+    type User = 
+        { Name: string }
 
-    // Record for User =>
-    type User = { Name: string }
-    // DU for player =>
-    type Player = { User: User; Hand: Hand }
-    // Record representing game state =>
-    type GameState = {Players: Player list; Deck: Deck }
-    // Single case DU representing possibleScores
-    type PossibleScores = 
-        | PossibleScores of int list
-        member this.List = match this with PossibleScores scores -> scores
+    type Player = 
+        { User: User
+          Hand: Card list
+          PossibleScores: int list }
 
-    let allRanks = 
-        [ Ace; King; Queen; Jack; Number(Two)
-          Number(Three); Number(Four); Number(Five) 
-          Number(Six); Number(Seven); Number(Eight) 
-          Number(Nine);Number(Ten) ]
+    type GameState = 
+        { Players: Player list
+          Deck: Card list
+          DuePlayerIndex: int }
 
+    type Response =
+        | Draw
+        | Pass
+        | EndGame
 
 [<AutoOpen>]
-module Deal =
-    // Generate a deck of cards populated with every possible combination =>
-    let generateDeck =
-        Deck 
-            [ for suit in [ Clubs; Diamonds; Hearts; Spades ] do
-                for rank in allRanks do
-                    { Suit = suit; Rank = rank } ]
+module SetUp =
 
-    let random = Random() // Random type for shuffling
-    let shuffle cards = cards |> List.sortBy (fun x -> random.Next())
+    let allSuits = 
+        [ Clubs
+          Diamonds
+          Hearts
+          Spades ]
 
-    // Take a deck and return one card and the rest of the cards from it as option
-    let tryDrawCard (deck: Deck) =
-        match deck.Cards with
+    let allRanks = 
+        [ Number(Two)
+          Number(Three)
+          Number(Four)
+          Number(Five) 
+          Number(Six)
+          Number(Seven)
+          Number(Eight)
+          Number(Nine)
+          Number(Ten) 
+          Jack
+          Queen
+          King
+          Ace ]
+
+    let random = Random() 
+
+    let fullDeck =    
+        [ for suit in allSuits do
+            for rank in allRanks do
+                { Suit = suit; 
+                  Rank = rank } ]
+
+    let shuffle cards = 
+        cards
+        |> List.sortBy (fun x -> random.Next())
+
+    let drawACard (deck : Card list) =
+        match deck with
         | [] -> None
-        | cards -> Some (cards.Head, Deck cards.Tail)
+        | first :: second -> Some (first, second)
 
-    // Take a deck and return two cards, and the rest of the cards from it as option
-    let tryDealHand (deck: Deck) =
-        match (deck |> tryDrawCard) with 
+    let drawTwoCards deck =
+        match (deck |> drawACard) with 
         | Some(firstDraw, theRestAfterFirstDraw) ->
-            match (theRestAfterFirstDraw |> tryDrawCard) with
+
+            match (theRestAfterFirstDraw |> drawACard) with
             | Some (secondDraw, theRestAfterSecondDraw) ->
-                Some (Hand [ firstDraw; secondDraw ], theRestAfterSecondDraw)
-            | None -> None        
+                Some ([ firstDraw; secondDraw ], theRestAfterSecondDraw)
+            | None -> None
+
         | None -> None    
 
-    // Take the number of players (N) and created a UserList with the length N
-    let setUsers numberOfPlayers = 
-        [ for x = 1 to numberOfPlayers do { Name = sprintf "P%d" x } ]
+    let setUpGameForNPlayers numberOfPlayers = 
+        { Players = 
+            [ for x = 1 to numberOfPlayers do 
+                { User = 
+                    { Name = sprintf "P%d" x } 
+                  Hand = []
+                  PossibleScores = [] } ]
+          Deck = fullDeck
+          DuePlayerIndex = 0 }
 
+    let dealTwoCardsToEachPlayer (players: Player list) (cards: Card list) =
 
-    // FOLDER function for dealing hands
-    let dealHands gameState user =
-        let players, deck = 
-            match gameState with
-            { Players = players; Deck = deck } -> players, deck
+        let playersDuplicated =
+            players 
+            |> Seq.replicate 2
+            |> Seq.concat
+            |> Seq.toArray
 
-        match deck |> tryDealHand with
-        | Some(hand, theRest) -> 
-            match players with
-            | playerList ->
-                { Players = { User = user; Hand = hand } :: playerList
-                  Deck = theRest }
-        | None -> gameState
+        let playerCardsGroups = 
+            [ for i, card in cards |> List.indexed do
+                let player = playersDuplicated |> Array.tryItem i
+                (player, card) ]
+            |> List.groupBy fst
+            |> Map
 
-    let hitPlayer player deck =
+        let playerHands =
+            [ for player in players do
+                let hand =
+                    playerCardsGroups
+                    |> Map.find (Some player)
+                    |> List.map snd 
+                { player with 
+                    Hand = hand; 
+                    (* PossibleScores = hand |> getPossibleScores *) 
+                    } ]
+
+        let remainingCards =
+            playerCardsGroups
+            |> Map.find None
+            |> List.map snd
+
+        playerHands, remainingCards
+
+    let dealOneToPlayer player deck =
         let newCard, newDeck =
-            match deck |> tryDrawCard with
+            match deck |> drawACard with
             | Some (drawnCard, theRest) -> drawnCard, theRest
             | None -> failwith "TODO: FIX THIS PM TO RETURN A PROPER VALUE"
 
-        let user, currentHand = match player with { User = user; Hand = cards } -> user, cards.Cards
-        let newHand = Hand (newCard :: currentHand)
+        let user, currentHand = match player with { User = user; Hand = cards } -> user, cards
+        let newHand = newCard :: currentHand
         
-        { User = user; Hand = newHand }, newDeck
-
-    // TODO: Delete this if you don't need it
-    let tryServePlayer {User = user; Hand = hand} (Deck deck) =    
-        match deck with
-        | nextCard :: remainingCards ->
-            let newPlayer = {User = user; Hand = Hand (nextCard :: hand.Cards) } 
-            let newDeck = Deck remainingCards
-            Some (newPlayer, newDeck)
-        | [] -> None    
+        { User = user; Hand = newHand; PossibleScores = [] }, newDeck
 
 
 [<AutoOpen>]
 module Calculations =
-    
-    let getScore card = 
+
+    let getCardScore card = 
         match card.Rank with
         | Ace -> [1; 11]
         | King | Queen | Jack -> [10]
@@ -133,37 +175,59 @@ module Calculations =
             | Nine -> [9]
             | Ten -> [10]
 
-    let addCardScore possibleScores card =
-        let scoreList = match possibleScores with PossibleScores(scores) -> scores
+    let getPossibleScores (cards: Card list) =
+        
+        let scoresInitial = [ for c in cards do c |> getCardScore ]
 
-        let newScores =
-            match card |> getScore with
-            | [ single ] -> [ for s in scoreList do s + single ]                    
-            | multiple ->
-                [ for s in scoreList do
-                    for p in multiple do
-                        s + p ]
+        let aceScores = 
+            [ for scores in scoresInitial do
+                if scores.Length = 2 then scores ]
+            |> List.concat            
 
-        PossibleScores newScores
+        let otherScoresInitial =
+            [ for score in scoresInitial do
+                if score.Length = 1 then k
+                    match score with 
+                    | [ score ] -> score 
+                    | _ -> failwith "SCOFERASDOFA" ]
+        
+        let otherScoresFinal =
+            if otherScoresInitial.IsEmpty then [ 0 ]
+            else otherScoresInitial
 
+        if aceScores.IsEmpty then otherScoresFinal
+        else
+            otherScoresFinal
+            |> List.replicate (aceScores.Length)
+            |> List.sort
+            |> List.indexed
+            |> List.map (fun result ->
+                match result with 
+                | i, scores ->
+                    match scores with
+                    | [ first; _ ] ->
+                        if i % 2 = 0 || i = 0 then
+                            first + 1
+                        else
+                            first + 11
+                    | _ -> 0 )
+
+    [ { Rank = Number(Two) ; Suit = Clubs }; { Rank = Number(Five) ; Suit = Clubs }; { Rank = Ace ; Suit = Clubs } ] 
+    |> getPossibleScores
 
     let playerScore (player: Player) =
         [ match player with 
             | { User = _; Hand = hand } -> 
-                for card in hand.Cards do 
-                    yield! card |> getScore ]
+                for card in hand do 
+                    yield! card |> getCardScore ]
+
+    let isPlayerBust { User = _; Hand = hand } =
+        hand |> getPossibleScores |> List.forall (fun s -> s > 21)
 
 
-    let scoreHand (Hand cards) = []
-
-
-    let isPlayerBust {User = _; Hand = hand} =
-        hand |> scoreHand |> List.forall (fun s -> s > 21)
-
-
-    let endGameStats (players: Player list) =
+    let endGameWithStats (players: Player list) =
         let playersByScore = 
-            players 
+            players  
             |> List.sortBy (fun p -> p |> playerScore)
 
         [ for i = 0 to playersByScore.Length - 1 do
@@ -173,10 +237,65 @@ module Calculations =
     let onePlayerLeft (players: Player list) =
         if players.Length = 1 then true, sprintf "%s Wins!" players.[0].User.Name
         else false, ""
-   
 
-// Start the game for Two people
-let readyState =
-    let setState = { Players = []; Deck = generateDeck }
-    let users = [ { Name = "P1" }; { Name = "P2" } ]
-    users |> Seq.fold dealHands setState
+let tryParseResponse response =
+    match response with
+    | 'D' | 'd' -> Some Draw
+    | 'P' | 'p' -> Some Pass
+    | _ -> None
+
+let actOnResponse gameState response =
+    match response with
+    | Pass -> { gameState with DuePlayerIndex = gameState.DuePlayerIndex + 1}
+    | Draw ->   
+        let newPlayer, newDeck =
+            gameState.Deck
+            |> dealOneToPlayer gameState.Players.[gameState.DuePlayerIndex]
+
+        let newPlayerList =            
+            gameState.Players
+            |> List.map (fun player -> 
+                if player = gameState.Players.[gameState.DuePlayerIndex] then newPlayer
+                else player )            
+        
+        { Players = newPlayerList
+          Deck = newDeck 
+          DuePlayerIndex = gameState.DuePlayerIndex + 1 }      
+    | EndGame -> gameState   
+
+let responses =
+    seq {
+        printfn "[D]raw, [P]ass? or [E]nd the game: "
+        Console.ReadKey().KeyChar }
+
+let isValidResponse response =
+    match response with    
+    | Some _ -> true
+    | None -> false
+
+module Main =
+    let beginningGameState = 2 |> setUpGameForNPlayers
+
+    let rec gameLoop gameState =
+        
+        printfn "[D]raw, [P]ass? or [E]nd the game: "
+
+        let response = 
+            Console.ReadKey().KeyChar 
+            |> tryParseResponse
+
+        match response with
+        | Some response -> 
+            response |> actOnResponse gameState
+        | None -> gameState |> gameLoop
+
+
+
+    
+
+
+
+
+    
+
+    
