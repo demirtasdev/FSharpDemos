@@ -87,7 +87,6 @@ module Calculations =
     let isPlayerBust { Name = _; Hand = hand } =
         hand |> getPossibleScores |> List.forall (fun s -> s > 21)
 
-
     let endGameWithStats (players: Player list) =
         let playersByScore = 
             players  
@@ -159,12 +158,8 @@ module SetUp =
             | Some (drawnCard, theRest) -> drawnCard, theRest
             | None -> failwith " TODO: FIX THIS PM TO RETURN A PROPER VALUE "
 
-        let name, currentHand = 
-            match player with 
-            { Name = name; Hand = cards } -> name, cards
-        let newHand = newCard :: currentHand
-        
-        { Name = name; Hand = newHand }, newDeck
+
+        { player with Hand = newCard :: player.Hand }, newDeck
 
 let isValidResponse response =
     match response with
@@ -190,20 +185,23 @@ let isBusted player =
     (player.Hand |> getPossibleScores |> getBestScore) > 21
 
 let actOnResponse gameState response =
-    let playerIndex = gameState.DuePlayerIndex % 2
     match response with
     | Pass -> 
-        { gameState with DuePlayerIndex = gameState.DuePlayerIndex + 1 }
+        printfn "PASS AAAAAAAAAAAAAAAAAAA"
+        { gameState with 
+            DuePlayerIndex = 
+                if gameState.DuePlayerIndex < gameState.Players.Length - 1 then gameState.DuePlayerIndex + 1
+                else 0 }
     | Draw ->   
         let newPlayer, newDeck =
             gameState.Deck
-            |> dealOneToPlayer gameState.Players.[playerIndex]
+            |> dealOneToPlayer gameState.Players.[gameState.DuePlayerIndex]
 
         let newPlayerList =            
             gameState.Players
-            |> List.map (fun player -> 
-                if player = gameState.Players.[playerIndex] then newPlayer
-                else player )            
+            |> List.map (fun p -> 
+                if p = gameState.Players.[gameState.DuePlayerIndex] then newPlayer
+                else p )            
         
         printfn "%s draws a card." newPlayer.Name
         
@@ -214,20 +212,27 @@ let actOnResponse gameState response =
             // New list of players without the busted player
             let newPlayerList = 
                 gameState.Players 
-                |> List.filter ((<>) gameState.Players.[ playerIndex ])
+                |> List.filter ((<>) gameState.Players.[gameState.DuePlayerIndex])
             // If more than one player remains:
             if newPlayerList.Length > 1 then
                 { gameState with 
                     Players = newPlayerList
                     Deck = newDeck }
             // One man standing:              
-            else                    
+            else 
                 printfn "%s Wins!" gameState.Players.[0].Name
                 gameState
         | false -> 
             printfn "New score: %d" (newPlayer.Hand |> getPossibleScores |> getBestScore)
-            gameState
+            
+            { gameState with
+                Players = newPlayerList
+                Deck = newDeck
+                DuePlayerIndex = 
+                    if gameState.DuePlayerIndex < gameState.Players.Length - 1 then gameState.DuePlayerIndex + 1
+                    else 0 }
     | EndGame -> 
+        printfn "ENDGAME AAAAAAAAAAAAA"
         gameState   
 
 let responses =
@@ -238,7 +243,6 @@ let responses =
             printfn "" }
 
 let dealTwoCardsToEachPlayer (players: Player list) (cards: Card list) =
-
     let playersDuplicated =
         players 
         |> Seq.replicate 2
@@ -285,35 +289,12 @@ module Main =
                     Players = players
                     Deck = deck }
 
-    let gameState =
-        { Players =
-            [ { Name = "P1"; Hand = []; };
-              { Name = "P2"; Hand = []; } ]
-          Deck = fullDeck
-          DuePlayerIndex = 0 }
-
-    let players, deck =
-         gameState.Deck |> dealTwoCardsToEachPlayer gameState.Players
-
-    let newGameState =
-        { gameState with Players = players; Deck = deck}     
-
-
-    let finalState =
+    let runGame() =
+        let initialGameState = setUpGameForNPlayers 2 |> Option.get
         responses
         |> Seq.filter isValidResponse
         |> Seq.map parseResponse
         |> Seq.takeWhile ((<>) EndGame)
-        |> Seq.fold actOnResponse gameState
+        |> Seq.fold actOnResponse initialGameState
 
-
-
-
-    
-
-
-
-
-    
-
-    
+Main.runGame()
