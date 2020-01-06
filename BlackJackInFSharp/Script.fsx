@@ -30,19 +30,19 @@ module Domain =
     type Card = 
         { Suit: Suit
           Rank: Rank }
-   
-    type User = 
-        { Name: string }
 
     type Player = 
-        { User: User
-          Hand: Card list
-          PossibleScores: int list }
+        { Name: string
+          Hand: Card list }
 
     type GameState = 
         { Players: Player list
           Deck: Card list
           DuePlayerIndex: int }
+
+    type State =
+        | SetUp
+        | Active of GameState      
 
     type Response =
         | Draw
@@ -50,8 +50,59 @@ module Domain =
         | EndGame
 
 [<AutoOpen>]
-module SetUp =
+module Calculations =
 
+    let getCardScore card = 
+        match card.Rank with
+        | Ace -> [1; 11]
+        | King | Queen | Jack -> [10]
+        | Number num ->
+            match num with 
+            | Two -> [2] 
+            | Three -> [3] 
+            | Four -> [4]
+            | Five -> [5]
+            | Six -> [6]
+            | Seven -> [7]
+            | Eight -> [8]
+            | Nine -> [9]
+            | Ten -> [10]
+
+    let addScores (cardScores: int list) (currentScores: int list) =
+        [ for score in cardScores do
+            for cs in currentScores do
+                score + cs ]
+
+    let getPossibleScores (cards: Card list) =
+        [ for c in cards do
+            c |> getCardScore ]
+        |> List.fold addScores [0]
+
+    let getPlayerScore (player: Player) =
+        [ match player with 
+            | { Name = _; Hand = hand } -> 
+                for card in hand do 
+                    yield! card |> getCardScore ]
+
+    let isPlayerBust { Name = _; Hand = hand } =
+        hand |> getPossibleScores |> List.forall (fun s -> s > 21)
+
+
+    let endGameWithStats (players: Player list) =
+        let playersByScore = 
+            players  
+            |> List.sortBy (fun p -> p |> getPlayerScore)
+
+        [ for i = 0 to playersByScore.Length - 1 do
+            {| Standing = sprintf "%d" i ; Name = playersByScore.[i] |} ]
+
+    // Check if all players but one busted
+    let onePlayerLeft (players: Player list) =
+        if players.Length = 1 then true, sprintf "%s Wins!" players.[0].Name
+        else false, ""
+
+[<AutoOpen>]
+module SetUp =
     let allSuits = 
         [ Clubs
           Diamonds
@@ -90,204 +141,171 @@ module SetUp =
         | [] -> None
         | first :: second -> Some (first, second)
 
-    let drawTwoCards deck =
-        match (deck |> drawACard) with 
-        | Some(firstDraw, theRestAfterFirstDraw) ->
-
-            match (theRestAfterFirstDraw |> drawACard) with
-            | Some (secondDraw, theRestAfterSecondDraw) ->
-                Some ([ firstDraw; secondDraw ], theRestAfterSecondDraw)
-            | None -> None
-
-        | None -> None    
-
     let setUpGameForNPlayers numberOfPlayers = 
-        { Players = 
-            [ for x = 1 to numberOfPlayers do 
-                { User = 
-                    { Name = sprintf "P%d" x } 
-                  Hand = []
-                  PossibleScores = [] } ]
-          Deck = fullDeck
-          DuePlayerIndex = 0 }
-
-    let dealTwoCardsToEachPlayer (players: Player list) (cards: Card list) =
-
-        let playersDuplicated =
-            players 
-            |> Seq.replicate 2
-            |> Seq.concat
-            |> Seq.toArray
-
-        let playerCardsGroups = 
-            [ for i, card in cards |> List.indexed do
-                let player = playersDuplicated |> Array.tryItem i
-                (player, card) ]
-            |> List.groupBy fst
-            |> Map
-
-        let playerHands =
-            [ for player in players do
-                let hand =
-                    playerCardsGroups
-                    |> Map.find (Some player)
-                    |> List.map snd 
-                { player with 
-                    Hand = hand; 
-                    (* PossibleScores = hand |> getPossibleScores *) 
-                    } ]
-
-        let remainingCards =
-            playerCardsGroups
-            |> Map.find None
-            |> List.map snd
-
-        playerHands, remainingCards
+        if numberOfPlayers > 1 then
+            Some 
+                { Players = 
+                    [ for x = 1 to numberOfPlayers do 
+                        { Name = sprintf "P%d" x 
+                          Hand = [] } ]
+                  Deck = fullDeck |> shuffle
+                  DuePlayerIndex = 0 }
+        else
+            None
 
     let dealOneToPlayer player deck =
         let newCard, newDeck =
             match deck |> drawACard with
             | Some (drawnCard, theRest) -> drawnCard, theRest
-            | None -> failwith "TODO: FIX THIS PM TO RETURN A PROPER VALUE"
+            | None -> failwith " TODO: FIX THIS PM TO RETURN A PROPER VALUE "
 
-        let user, currentHand = match player with { User = user; Hand = cards } -> user, cards
+        let name, currentHand = 
+            match player with 
+            { Name = name; Hand = cards } -> name, cards
         let newHand = newCard :: currentHand
         
-        { User = user; Hand = newHand; PossibleScores = [] }, newDeck
+        { Name = name; Hand = newHand }, newDeck
 
-
-[<AutoOpen>]
-module Calculations =
-
-    let getCardScore card = 
-        match card.Rank with
-        | Ace -> [1; 11]
-        | King | Queen | Jack -> [10]
-        | Number num ->
-            match num with 
-            | Two -> [2] 
-            | Three -> [3] 
-            | Four -> [4]
-            | Five -> [5]
-            | Six -> [6]
-            | Seven -> [7]
-            | Eight -> [8]
-            | Nine -> [9]
-            | Ten -> [10]
-
-    let getPossibleScores (cards: Card list) =
-        
-        let scoresInitial = [ for c in cards do c |> getCardScore ]
-
-        let aceScores = 
-            [ for scores in scoresInitial do
-                if scores.Length = 2 then scores ]
-            |> List.concat            
-
-        let otherScoresInitial =
-            [ for score in scoresInitial do
-                if score.Length = 1 then k
-                    match score with 
-                    | [ score ] -> score 
-                    | _ -> failwith "SCOFERASDOFA" ]
-        
-        let otherScoresFinal =
-            if otherScoresInitial.IsEmpty then [ 0 ]
-            else otherScoresInitial
-
-        if aceScores.IsEmpty then otherScoresFinal
-        else
-            otherScoresFinal
-            |> List.replicate (aceScores.Length)
-            |> List.sort
-            |> List.indexed
-            |> List.map (fun result ->
-                match result with 
-                | i, scores ->
-                    match scores with
-                    | [ first; _ ] ->
-                        if i % 2 = 0 || i = 0 then
-                            first + 1
-                        else
-                            first + 11
-                    | _ -> 0 )
-
-    [ { Rank = Number(Two) ; Suit = Clubs }; { Rank = Number(Five) ; Suit = Clubs }; { Rank = Ace ; Suit = Clubs } ] 
-    |> getPossibleScores
-
-    let playerScore (player: Player) =
-        [ match player with 
-            | { User = _; Hand = hand } -> 
-                for card in hand do 
-                    yield! card |> getCardScore ]
-
-    let isPlayerBust { User = _; Hand = hand } =
-        hand |> getPossibleScores |> List.forall (fun s -> s > 21)
-
-
-    let endGameWithStats (players: Player list) =
-        let playersByScore = 
-            players  
-            |> List.sortBy (fun p -> p |> playerScore)
-
-        [ for i = 0 to playersByScore.Length - 1 do
-            {| Standing = sprintf "%d" i ; Name = playersByScore.[i] |} ]
-
-    // Check if all players but one busted
-    let onePlayerLeft (players: Player list) =
-        if players.Length = 1 then true, sprintf "%s Wins!" players.[0].User.Name
-        else false, ""
-
-let tryParseResponse response =
+let isValidResponse response =
     match response with
-    | 'D' | 'd' -> Some Draw
-    | 'P' | 'p' -> Some Pass
-    | _ -> None
+    | 'D' | 'd' | 'P' | 'p' | 'E' | 'e' -> true
+    | _ -> false
+
+let parseResponse response =
+    match response with
+    | 'D' | 'd' -> Draw
+    | 'P' | 'p' -> Pass
+    | 'E' | 'e' -> EndGame
+    | _ -> failwith "WTF"
+
+let getBestScore (scores: int list) =
+    let bestScore = 
+        [ for s in scores do
+            if s < 21 then s ]
+
+    if bestScore.IsEmpty then scores |> List.min
+    else bestScore |> List.max
+
+let isBusted player =
+    (player.Hand |> getPossibleScores |> getBestScore) > 21
 
 let actOnResponse gameState response =
+    let playerIndex = gameState.DuePlayerIndex % 2
     match response with
-    | Pass -> { gameState with DuePlayerIndex = gameState.DuePlayerIndex + 1}
+    | Pass -> 
+        { gameState with DuePlayerIndex = gameState.DuePlayerIndex + 1 }
     | Draw ->   
         let newPlayer, newDeck =
             gameState.Deck
-            |> dealOneToPlayer gameState.Players.[gameState.DuePlayerIndex]
+            |> dealOneToPlayer gameState.Players.[playerIndex]
 
         let newPlayerList =            
             gameState.Players
             |> List.map (fun player -> 
-                if player = gameState.Players.[gameState.DuePlayerIndex] then newPlayer
+                if player = gameState.Players.[playerIndex] then newPlayer
                 else player )            
         
-        { Players = newPlayerList
-          Deck = newDeck 
-          DuePlayerIndex = gameState.DuePlayerIndex + 1 }      
-    | EndGame -> gameState   
+        printfn "%s draws a card." newPlayer.Name
+        
+        match newPlayer |> isBusted with
+        | true -> 
+            // Player busts
+            printfn "It's a bust! He's out."
+            // New list of players without the busted player
+            let newPlayerList = 
+                gameState.Players 
+                |> List.filter ((<>) gameState.Players.[ playerIndex ])
+            // If more than one player remains:
+            if newPlayerList.Length > 1 then
+                { gameState with 
+                    Players = newPlayerList
+                    Deck = newDeck }
+            // One man standing:              
+            else                    
+                printfn "%s Wins!" gameState.Players.[0].Name
+                gameState
+        | false -> 
+            printfn "New score: %d" (newPlayer.Hand |> getPossibleScores |> getBestScore)
+            gameState
+    | EndGame -> 
+        gameState   
 
 let responses =
     seq {
-        printfn "[D]raw, [P]ass? or [E]nd the game: "
-        Console.ReadKey().KeyChar }
+        while true do
+            printfn "[D]raw, [P]ass? or [E]nd the game: "
+            yield Console.ReadKey().KeyChar 
+            printfn "" }
 
-let isValidResponse response =
-    match response with    
-    | Some _ -> true
-    | None -> false
+let dealTwoCardsToEachPlayer (players: Player list) (cards: Card list) =
+
+    let playersDuplicated =
+        players 
+        |> Seq.replicate 2
+        |> Seq.concat
+        |> Seq.toArray
+
+    let playerCardsGroups = 
+        [ for i, card in cards |> List.indexed do
+            let player = playersDuplicated |> Array.tryItem i
+            (player, card) ]
+        |> List.groupBy fst
+        |> Map
+
+    let playerHands =
+        [ for player in players do
+            let hand =
+                playerCardsGroups
+                |> Map.find (Some player)
+                |> List.map snd 
+            { player with 
+                Hand = hand;
+                } ]
+
+    let remainingCards =
+        playerCardsGroups
+        |> Map.find None
+        |> List.map snd
+
+    playerHands, remainingCards
 
 module Main =
-    let beginningGameState = 2 |> setUpGameForNPlayers
+    let rec setUp (gso: GameState option) =
+        match gso with
+        | None -> 
+            printfn "How many players would you like to set up the game for?"
+            match Console.ReadLine() |> Int32.TryParse with
+            | true, i -> i | false, _ -> 0
+            |> setUpGameForNPlayers
+            |> setUp
+        | Some gameState ->
+            match gameState.Deck |> dealTwoCardsToEachPlayer gameState.Players with
+            | players, deck -> 
+                { gameState with 
+                    Players = players
+                    Deck = deck }
 
-    let rec gameLoop gameState =
-        
-        printfn "[D]raw, [P]ass? or [E]nd the game: "
+    let gameState =
+        { Players =
+            [ { Name = "P1"; Hand = []; };
+              { Name = "P2"; Hand = []; } ]
+          Deck = fullDeck
+          DuePlayerIndex = 0 }
 
-        let response = 
-            Console.ReadKey().KeyChar 
-            |> tryParseResponse
+    let players, deck =
+         gameState.Deck |> dealTwoCardsToEachPlayer gameState.Players
 
-        match response with
-        | Some response -> 
-            response |> actOnResponse gameState
-        | None -> gameState |> gameLoop
+    let newGameState =
+        { gameState with Players = players; Deck = deck}     
+
+
+    let finalState =
+        responses
+        |> Seq.filter isValidResponse
+        |> Seq.map parseResponse
+        |> Seq.takeWhile ((<>) EndGame)
+        |> Seq.fold actOnResponse gameState
+
 
 
 
